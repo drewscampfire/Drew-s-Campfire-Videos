@@ -1,0 +1,10 @@
+manim
+torch
+torchdiffeq
+scipy
+numpy
+tqdm
+memory_profiler
+numba
+psutil
+matplotlib
