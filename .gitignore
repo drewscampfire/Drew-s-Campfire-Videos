@@ -1,0 +1,9 @@
+
+*.dat
+*.wav
+*.mp3
+*.pkl
+*.png
+*.svg
+*.tex
+setup_blender_files.py
