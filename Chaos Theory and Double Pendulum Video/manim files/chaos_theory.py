@@ -131,7 +131,7 @@ class Scene4(ComplexScene):
         self.play(ManualDoublePendulumAnimation(self.dp, (30, 60), 2, smootherstep))
         self.play(ReleaseDoublePendulum(self.main_dp, av, 20))
 
-    @run
+    @ignore
     def scene4_1_longer_entrance(self):
         self.dp.angle_pair = (0, 0)
         self.dp.shift(4.1 * DOWN)
@@ -2749,13 +2749,13 @@ class Scene7(ComplexScene):
         #     skip_processing=False
         # ))
 
-    @ignore
+    @run
     def scene7_4_high_quality_testing(self):
         cs = get_standard_cs().set_z_index(2)
         cs_bg_rect = cs.get_background_rectangle()
         table_title = Text(
             "ALL POSSIBLE INITIAL POSITIONS",
-            fill_color=LIGHT_BROWN,
+            fill_color=AMBER_ORANGE,
             font="Montserrat Medium",
         ).scale(0.35).next_to(cs_bg_rect, UP, buff=0.05)
         color_tracker = self.create_vert_color_tracker()
@@ -2982,7 +2982,7 @@ if __name__ == "__main__":
             subprocess.run(['manim', 'chaos_theory.py', scene_to_render])
 
 
-    run_manim_scene(0)
+    run_manim_scene(3)
 
     print(f"leftover memmaps: (should return nothing)")
     delete_memmap_files(
