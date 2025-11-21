@@ -378,7 +378,8 @@ class OptimizedForPixelGridComputation(OptimizedDoublePendulumComputation):
             self,
             jump_threshold: float = 180,
             use_existing_dat: str | None = None,
-            skip_processing: bool = False
+            skip_processing: bool = False,
+            target_flip_number: int = 1,
     ) -> np.ndarray:
         # --- Revised Print Statement ---
         num_dps_input = self.angle_pairs.shape[0]
@@ -390,7 +391,8 @@ class OptimizedForPixelGridComputation(OptimizedDoublePendulumComputation):
         if use_existing_dat is not None:
             file_name = os.path.join(dp_data_file_dir, f"{use_existing_dat + '_flip_' + str(fps) + quality}.dat")
         else:
-            file_name = get_unique_filename(base_name='flip_index_data', directory=dp_data_file_dir)
+            base_name = f'flip_index_data_combined_n{target_flip_number}'
+            file_name = get_unique_filename(base_name=base_name, directory=dp_data_file_dir)
 
         file_exists = os.path.exists(file_name)
         index_data_mmap = np.memmap(
@@ -419,6 +421,9 @@ class OptimizedForPixelGridComputation(OptimizedDoublePendulumComputation):
             end_index = min((i + 1) * max_num_of_dp_per_batch, self.num_of_dps)
 
             batch_data = index_data_mmap[start_index:end_index]
+            # IMPORTANT: Because 0 is now a valid output (frame 0), we must be careful.
+            # However, standard init is 0. If your previous runs wrote 0s incorrectly,
+            # you should delete the .dat file before running this fix.
             if not np.any(batch_data == 0):
                 print(f"\nskipping batch starting at index {start_index} (already processed)")
                 continue
@@ -478,22 +483,33 @@ class OptimizedForPixelGridComputation(OptimizedDoublePendulumComputation):
                 del angle_diffs
                 torch.cuda.empty_cache()
 
-                true_indices = angle_mask_bool.to(torch.int8).argmax(dim=1)
+                cumulative_flips = angle_mask_bool.cumsum(dim=1)
+                target_mask = (cumulative_flips == target_flip_number)
+                has_target_flips = cumulative_flips[:, -1, :] >= target_flip_number
 
-                all_false_mask = ~angle_mask_bool.any(dim=1)  # This line can remain as is
-                del angle_mask_bool
+                del cumulative_flips
                 torch.cuda.empty_cache()
 
-                true_indices[all_false_mask] = torch.iinfo(true_indices.dtype).max  # Max value for no flip
+                found_indices = target_mask.to(torch.int8).argmax(dim=1)
 
+                del target_mask
+                torch.cuda.empty_cache()
+
+                # FIX: Use a safe large number to avoid overflow when adding 1 later
+                safe_max_val = n_timesteps + 2
+                true_indices = torch.full_like(found_indices, safe_max_val)
+                true_indices[has_target_flips] = found_indices[has_target_flips]
+
+                del has_target_flips, found_indices
+                torch.cuda.empty_cache()
+
+                # Now this addition is safe from overflow
                 indices = torch.minimum(true_indices[:, 0], true_indices[:, 1]) + 1
                 del true_indices
                 torch.cuda.empty_cache()
 
-                combined_all_false = all_false_mask[:, 0] & all_false_mask[:, 1]
-                indices[combined_all_false] = -1
-                del all_false_mask, combined_all_false
-                torch.cuda.empty_cache()
+                no_flip_mask = indices > n_timesteps
+                indices[no_flip_mask] = -1
 
                 indices_np = indices.to(torch.int16).cpu().numpy()
                 del indices

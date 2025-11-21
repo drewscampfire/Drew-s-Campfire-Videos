@@ -6,27 +6,27 @@ if torch.cuda.is_available():
 else:
     print(f"\nNo GPU found!\n")
     device = None
-fps = 12
-quality = 'high_quality'  # ['fourk_quality', 'high_quality', 'medium_quality']
-MAX_GB = 3.0
+fps = 60
+quality = 'fourk_quality'  # ['fourk_quality', 'high_quality', 'medium_quality']
+MAX_GB = 8.0
 config.quality = quality
 config.frame_rate = fps
 config.preview = True
 config.disable_caching = True
 
 # comment out if rendering in remote instance
-config.media_dir = r"C:\Users\Andrew Tres Reyes\OneDrive\Desktop\Manim Media\Chaos_Theory" # for my system
-dp_data_file_dir = r'D:\dp_data_files' # for my system
-# dp_data_file_dir = r'/home/user/Desktop/dp_data_files' # for remote instance
+# config.media_dir = r"C:\Users\Andrew Tres Reyes\OneDrive\Desktop\Manim Media\Chaos_Theory" # for my system
+# dp_data_file_dir = r'D:\dp_data_files' # for my system
+dp_data_file_dir = r'/home/user/Desktop/dp_data_files' # for remote instance
 
 config.zero_pad = 6
 
-file_type = 'mp4'  # ['mp4', 'png']
+file_type = 'png'  # ['mp4', 'png']
 # comment out if file_type == 'mp4'
-# config.format = "png"
-# config.save_pngs = True
+config.format = "png"
+config.save_pngs = True
 
-use_background = True # True if mp4, False if png
+use_background = False # True if mp4, False if png
 
 FIRST_ROD_COLOR = ManimColor("#ffd77b")
 SECOND_ROD_COLOR = ManimColor("#7ba3ff")

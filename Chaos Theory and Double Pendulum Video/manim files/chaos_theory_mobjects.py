@@ -836,13 +836,15 @@ class PixelGridAnglesComputation:
             color_tracker: ColorTracker,
             duration: float,
             skip_processing: bool = False,
-            use_existing_dat: str | None = None
+            use_existing_dat: str | None = None,
+            **flip_visuals_kwargs
     ) -> np.ndarray:
         index_data = self.get_flips_index_data(
             duration,
             linear,
             skip_processing=skip_processing,
-            use_existing_dat=use_existing_dat
+            use_existing_dat=use_existing_dat,
+            **flip_visuals_kwargs
         )
         if use_existing_dat is not None:
             file_name = os.path.join(
@@ -1130,6 +1132,7 @@ class ColorTracker(Group):
             length_units: float = 7,
             color_rate_func: Callable[[float], float] = linear,
             radius: float = 0.15,
+            arrow_length_level: float = 5,
             **kwargs
     ):
         self.colors = colors
@@ -1139,6 +1142,7 @@ class ColorTracker(Group):
         self.width_units = width_units
         self.length_units = length_units
         self.radius = radius
+        self.arrow_length_level = arrow_length_level
         self._color_rate_func = color_rate_func
 
         self.length_in_pixels = int(length_units * SCENE_PIXELS)
@@ -1210,8 +1214,8 @@ class ColorTracker(Group):
             "fill_opacity": 1,
             "stroke_width": 0,
         }
-        circle = Circle(self.radius, **arrow_specs)
-        shaft = Rectangle(height=self.radius / 1.5, width=self.radius * 5, **arrow_specs)
+        circle = Circle(self.radius * (self.arrow_length_level / 5), **arrow_specs)
+        shaft = Rectangle(height=self.radius / 1.5, width=self.radius * self.arrow_length_level, **arrow_specs)
         tip = Triangle(radius=(self.radius / 1.5) / (math.sqrt(3)), **arrow_specs)
 
         if self.is_horizontal:
