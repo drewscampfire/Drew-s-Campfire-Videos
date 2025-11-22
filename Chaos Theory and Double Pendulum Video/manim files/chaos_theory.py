@@ -2780,7 +2780,7 @@ class Scene7(ComplexScene):
             10,
             False,
             0.5,
-            (pixel_length / SCENE_PIXELS) + 0.2,
+            (pixel_length / SCENE_PIXELS) + 0.25,
             color_rate_func=steep_slow_into,  # FR: steep_slow_into
             arrow_length_level=4,
         ).shift(6.5 * RIGHT).set_z_index(-7)
@@ -2802,12 +2802,14 @@ class Scene7(ComplexScene):
                 y_length=3.6,
                 x_is_in_degrees=True,
                 y_is_in_degrees=True,
-                font_size_x=14,
-                font_size_y=14,
+                font_size_x=15,
+                font_size_y=15,
                 include_zero_lines=False,
                 use_constant_tick_length=True,
                 x_line_to_number_buff=0.1225,
                 y_line_to_number_buff=0.1225,
+                labeled_values_for_x_override=[-180, -90, 0, 90, 180],
+                labeled_values_for_y_override=[-180, -90, 0, 90, 180],
                 tick_length=0.008
             ).set_z_index(5)
             cs_bg_rect = cs.get_background_rectangle().set_z_index(-5)
@@ -2828,7 +2830,7 @@ class Scene7(ComplexScene):
                 **flips_visualize_kwargs
             ))
 
-        group.arrange_in_grid(2, 3, buff=SMALL_BUFF).shift(LEFT * 0.75)
+        group.arrange_in_grid(2, 3, buff=SMALL_BUFF / 2).shift(LEFT * 0.75)
 
         self.add(color_tracker, group)
         self.wait()

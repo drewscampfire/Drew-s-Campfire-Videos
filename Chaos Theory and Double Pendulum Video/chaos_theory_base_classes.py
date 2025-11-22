@@ -383,9 +383,9 @@ class OptimizedForPixelGridComputation(OptimizedDoublePendulumComputation):
     ) -> np.ndarray:
         # --- Revised Print Statement ---
         num_dps_input = self.angle_pairs.shape[0]
-        print(f"\n----------> Running flip_visuals_index_data:")
+        print(f"\n----------> Running flip_visuals_index_data (Combined System Count):")
         print(f"              Input angle pairs shape: ({num_dps_input:,}, 2)")
-        print(f"              Simulation time per pendulum (if run): {self.t_span} seconds")
+        print(f"              Target System Flip: #{target_flip_number}")
         # --- End Revised Print Statement ---
 
         if use_existing_dat is not None:
@@ -409,7 +409,7 @@ class OptimizedForPixelGridComputation(OptimizedDoublePendulumComputation):
             return index_data_mmap
 
         t_values = self.get_t_values()
-        n_timesteps = len(t_values)  # Number of time steps in the ODE solution
+        n_timesteps = len(t_values)
         # 4 state variables; 8 bytes per element (float64)
         max_num_of_dp_per_batch = int(MAX_GB * 1024 ** 3) // (n_timesteps * 4 * 8)
         num_of_batches = math.ceil(self.num_of_dps / max_num_of_dp_per_batch)
@@ -421,9 +421,6 @@ class OptimizedForPixelGridComputation(OptimizedDoublePendulumComputation):
             end_index = min((i + 1) * max_num_of_dp_per_batch, self.num_of_dps)
 
             batch_data = index_data_mmap[start_index:end_index]
-            # IMPORTANT: Because 0 is now a valid output (frame 0), we must be careful.
-            # However, standard init is 0. If your previous runs wrote 0s incorrectly,
-            # you should delete the .dat file before running this fix.
             if not np.any(batch_data == 0):
                 print(f"\nskipping batch starting at index {start_index} (already processed)")
                 continue
@@ -483,36 +480,35 @@ class OptimizedForPixelGridComputation(OptimizedDoublePendulumComputation):
                 del angle_diffs
                 torch.cuda.empty_cache()
 
-                cumulative_flips = angle_mask_bool.cumsum(dim=1)
-                target_mask = (cumulative_flips == target_flip_number)
-                has_target_flips = cumulative_flips[:, -1, :] >= target_flip_number
+                flips_per_step = angle_mask_bool.long().sum(dim=2)
+                del angle_mask_bool
+                torch.cuda.empty_cache()
 
-                del cumulative_flips
+                system_cumulative = flips_per_step.cumsum(dim=1)
+                del flips_per_step
+                torch.cuda.empty_cache()
+
+                target_mask = system_cumulative >= target_flip_number
+
+                has_reached_target = system_cumulative[:, -1] >= target_flip_number
+                del system_cumulative
                 torch.cuda.empty_cache()
 
                 found_indices = target_mask.to(torch.int8).argmax(dim=1)
-
                 del target_mask
                 torch.cuda.empty_cache()
 
-                # FIX: Use a safe large number to avoid overflow when adding 1 later
-                safe_max_val = n_timesteps + 2
-                true_indices = torch.full_like(found_indices, safe_max_val)
-                true_indices[has_target_flips] = found_indices[has_target_flips]
+                final_indices = torch.where(
+                    has_reached_target,
+                    found_indices + 1,
+                    torch.tensor(-1, device=device, dtype=found_indices.dtype)
+                )
 
-                del has_target_flips, found_indices
+                del has_reached_target, found_indices
                 torch.cuda.empty_cache()
 
-                # Now this addition is safe from overflow
-                indices = torch.minimum(true_indices[:, 0], true_indices[:, 1]) + 1
-                del true_indices
-                torch.cuda.empty_cache()
-
-                no_flip_mask = indices > n_timesteps
-                indices[no_flip_mask] = -1
-
-                indices_np = indices.to(torch.int16).cpu().numpy()
-                del indices
+                indices_np = final_indices.to(torch.int16).cpu().numpy()
+                del final_indices
                 torch.cuda.empty_cache()
 
                 index_data_mmap[start_index:end_index] = indices_np
