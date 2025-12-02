@@ -378,19 +378,21 @@ class OptimizedForPixelGridComputation(OptimizedDoublePendulumComputation):
             self,
             jump_threshold: float = 180,
             use_existing_dat: str | None = None,
-            skip_processing: bool = False
+            skip_processing: bool = False,
+            target_flip_number: int = 1,
     ) -> np.ndarray:
         # --- Revised Print Statement ---
         num_dps_input = self.angle_pairs.shape[0]
-        print(f"\n----------> Running flip_visuals_index_data:")
+        print(f"\n----------> Running flip_visuals_index_data (Combined System Count):")
         print(f"              Input angle pairs shape: ({num_dps_input:,}, 2)")
-        print(f"              Simulation time per pendulum (if run): {self.t_span} seconds")
+        print(f"              Target System Flip: #{target_flip_number}")
         # --- End Revised Print Statement ---
 
         if use_existing_dat is not None:
             file_name = os.path.join(dp_data_file_dir, f"{use_existing_dat + '_flip_' + str(fps) + quality}.dat")
         else:
-            file_name = get_unique_filename(base_name='flip_index_data', directory=dp_data_file_dir)
+            base_name = f'flip_index_data_combined_n{target_flip_number}'
+            file_name = get_unique_filename(base_name=base_name, directory=dp_data_file_dir)
 
         file_exists = os.path.exists(file_name)
         index_data_mmap = np.memmap(
@@ -407,7 +409,7 @@ class OptimizedForPixelGridComputation(OptimizedDoublePendulumComputation):
             return index_data_mmap
 
         t_values = self.get_t_values()
-        n_timesteps = len(t_values)  # Number of time steps in the ODE solution
+        n_timesteps = len(t_values)
         # 4 state variables; 8 bytes per element (float64)
         max_num_of_dp_per_batch = int(MAX_GB * 1024 ** 3) // (n_timesteps * 4 * 8)
         num_of_batches = math.ceil(self.num_of_dps / max_num_of_dp_per_batch)
@@ -478,25 +480,35 @@ class OptimizedForPixelGridComputation(OptimizedDoublePendulumComputation):
                 del angle_diffs
                 torch.cuda.empty_cache()
 
-                true_indices = angle_mask_bool.to(torch.int8).argmax(dim=1)
-
-                all_false_mask = ~angle_mask_bool.any(dim=1)  # This line can remain as is
+                flips_per_step = angle_mask_bool.long().sum(dim=2)
                 del angle_mask_bool
                 torch.cuda.empty_cache()
 
-                true_indices[all_false_mask] = torch.iinfo(true_indices.dtype).max  # Max value for no flip
-
-                indices = torch.minimum(true_indices[:, 0], true_indices[:, 1]) + 1
-                del true_indices
+                system_cumulative = flips_per_step.cumsum(dim=1)
+                del flips_per_step
                 torch.cuda.empty_cache()
 
-                combined_all_false = all_false_mask[:, 0] & all_false_mask[:, 1]
-                indices[combined_all_false] = -1
-                del all_false_mask, combined_all_false
+                target_mask = system_cumulative >= target_flip_number
+
+                has_reached_target = system_cumulative[:, -1] >= target_flip_number
+                del system_cumulative
                 torch.cuda.empty_cache()
 
-                indices_np = indices.to(torch.int16).cpu().numpy()
-                del indices
+                found_indices = target_mask.to(torch.int8).argmax(dim=1)
+                del target_mask
+                torch.cuda.empty_cache()
+
+                final_indices = torch.where(
+                    has_reached_target,
+                    found_indices + 1,
+                    torch.tensor(-1, device=device, dtype=found_indices.dtype)
+                )
+
+                del has_reached_target, found_indices
+                torch.cuda.empty_cache()
+
+                indices_np = final_indices.to(torch.int16).cpu().numpy()
+                del final_indices
                 torch.cuda.empty_cache()
 
                 index_data_mmap[start_index:end_index] = indices_np

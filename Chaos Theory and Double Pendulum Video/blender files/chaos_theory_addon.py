@@ -54,9 +54,12 @@ if CTS:
 if Scene2_U:
     range_angle_1 = 65, 65
     range_angle_2 = 50, 75
-if Scene2_V or Scene2_V_30secs:
+if Scene2_V:
     range_angle_1 = 101, 101
     range_angle_2 = 113, 117  # 161, 164.92; 50 elements
+if Scene2_V_30secs:
+    range_angle_1 = 45, 65
+    range_angle_2 = -80, -100
 if A3:
     range_angle_1 = 90, 90
     range_angle_2 = 160, 160
@@ -214,8 +217,8 @@ class DoublePendulum:
             (self.t1, self.t2, 0, 0),  # initial conditions
             t_eval=self.get_t_values(),  # time points
             method='DOP853',  # RK23 or RK45 or DOP853
-            rtol=1e-9,
-            atol=1e-11
+            rtol=1e-10,
+            atol=1e-12
         )
         theta_1 = self.normalize_angles_in_rads(np.array(ans.y[0]))
         theta_2 = self.normalize_angles_in_rads(np.array(ans.y[1]))
@@ -433,7 +436,7 @@ class DoublePendulumAnimator:
                     ORIGIN,
                     angle_pair[0] * DEGREES,
                     angle_pair[1] * DEGREES,
-                    t_span=90)
+                    t_span=70)
 
                 theta_1_array, theta_2_array = double_pendulum.get_angles()
                 for theta_1, theta_2 in zip(-theta_1_array, -theta_2_array):
@@ -520,7 +523,10 @@ class DoublePendulumAnimator:
             put_in_their_collections(first_rod, second_rod, bob1)
 
             for obj in [first_rod, second_rod, bob1]:
-                if get_object_index_in_collection(obj) > hide_index:
+                index_obj = get_object_index_in_collection(obj)
+                if index_obj > hide_index:
+                    if index_obj % 12 == 0:
+                        continue
                     hide_viewport(obj)
 
             return first_rod, second_rod
