@@ -38,21 +38,21 @@ def get_dp_graph(
     )
 
 
-def get_standard_cs(x_range: tuple[float, float]=(-180, 180), y_range: tuple[float, float]=(-180, 180)):
+def get_standard_cs(x_range: tuple[float, float] = (-180, 180), y_range: tuple[float, float] = (-180, 180)):
     return DynamicAxes(
-            x_range=x_range,
-            y_range=y_range,
-            x_length=pixel_length / SCENE_PIXELS,
-            y_length=pixel_length / SCENE_PIXELS,
-            x_is_in_degrees=True,
-            y_is_in_degrees=True,
-            font_size_x=20,
-            font_size_y=20,
-            include_zero_lines=False,
-            use_constant_tick_length=True,
-            x_line_to_number_buff=0.125,
-            y_line_to_number_buff=0.125,
-            tick_length=0.0125
+        x_range=x_range,
+        y_range=y_range,
+        x_length=pixel_length / SCENE_PIXELS,
+        y_length=pixel_length / SCENE_PIXELS,
+        x_is_in_degrees=True,
+        y_is_in_degrees=True,
+        font_size_x=20,
+        font_size_y=20,
+        include_zero_lines=False,
+        use_constant_tick_length=True,
+        x_line_to_number_buff=0.125,
+        y_line_to_number_buff=0.125,
+        tick_length=0.0125
     )
 
 
@@ -131,12 +131,12 @@ class Scene4(ComplexScene):
         self.play(ManualDoublePendulumAnimation(self.dp, (30, 60), 2, smootherstep))
         self.play(ReleaseDoublePendulum(self.main_dp, av, 20))
 
-    @run
+    @ignore
     def scene4_1_longer_entrance(self):
         self.dp.angle_pair = (0, 0)
         self.dp.shift(4.1 * DOWN)
 
-        self.play(Move(self.dp, ORIGIN, rate_func=anticipate, run_time=5/3))
+        self.play(Move(self.dp, ORIGIN, rate_func=anticipate, run_time=5 / 3))
 
     @ignore
     def scene4_1_dp_for_hilbert(self):
@@ -171,9 +171,9 @@ class Scene4(ComplexScene):
 
         )
         time_label = Text(r"time (s)", color=self.cs.x_axis_color
-                         ).scale(0.4).next_to(self.cs.x_axis.get_end(), RIGHT, SMALL_BUFF * 1.5)
+                          ).scale(0.4).next_to(self.cs.x_axis.get_end(), RIGHT, SMALL_BUFF * 1.5)
         y_label = Text(r"angle", color=self.cs.y_axis_color
-                      ).scale(0.4).next_to(self.cs.y_axis.get_end(), UP, SMALL_BUFF * 1.5)
+                       ).scale(0.4).next_to(self.cs.y_axis.get_end(), UP, SMALL_BUFF * 1.5)
         self.cs.x_axis_label = time_label
         self.cs.y_axis_label = y_label
 
@@ -262,7 +262,7 @@ class Scene4(ComplexScene):
     ):
         x, y = config.frame_width, config.frame_height
         x_interval, y_interval = x / 3, y / 3
-        center_ax_loc = (7/48) * (x / 2) * RIGHT + 0.0625 * UP
+        center_ax_loc = (7 / 48) * (x / 2) * RIGHT + 0.0625 * UP
         dp_loc_offset = 1.225 * LEFT
         U, V = np.meshgrid(np.array([-1, 0, 1]), np.array([1, 0, -1]))
         coordinate_pairs = np.column_stack((U.ravel(), V.ravel()))
@@ -278,21 +278,21 @@ class Scene4(ComplexScene):
         axes = []
         for ax_location in ax_locations:
             ax = DynamicAxes(
-                    x_range=(-90, 90) if not is_chaos else (-180, 180),
-                    y_range=(-90, 90) if not is_chaos else (-180, 180),
-                    x_length=2.3,
-                    y_length=2.3,
-                    x_is_in_degrees=True,
-                    y_is_in_degrees=True,
-                    font_size_x=13,
-                    font_size_y=13,
-                    include_zero_lines=True,
-                    x_line_to_number_buff=0.175,
-                    y_line_to_number_buff=0.15,
-                    labeled_values_for_x_override=[-90, -45, 0, 45, 90] if not is_chaos else [-180, -90, 0, 90, 180],
-                    labeled_values_for_y_override=[-90, -45, 0, 45, 90] if not is_chaos else [-180, -90, 0, 90, 180],
-                    tick_length=0.008
-                ).shift(ax_location)
+                x_range=(-90, 90) if not is_chaos else (-180, 180),
+                y_range=(-90, 90) if not is_chaos else (-180, 180),
+                x_length=2.3,
+                y_length=2.3,
+                x_is_in_degrees=True,
+                y_is_in_degrees=True,
+                font_size_x=13,
+                font_size_y=13,
+                include_zero_lines=True,
+                x_line_to_number_buff=0.175,
+                y_line_to_number_buff=0.15,
+                labeled_values_for_x_override=[-90, -45, 0, 45, 90] if not is_chaos else [-180, -90, 0, 90, 180],
+                labeled_values_for_y_override=[-90, -45, 0, 45, 90] if not is_chaos else [-180, -90, 0, 90, 180],
+                tick_length=0.008
+            ).shift(ax_location)
             bg_rect = ax.get_background_rectangle()
             axes.append(ax)
         main_dp_list = []
@@ -301,9 +301,9 @@ class Scene4(ComplexScene):
             main_dp = DoublePendulum((0, 0))
             main_dp_list.append(main_dp)
             dp = main_dp.create_double_pendulum(
-                    0.7 if not is_chaos else 0.675,
-                    0.7 if not is_chaos else 0.675,
-                )
+                0.7 if not is_chaos else 0.675,
+                0.7 if not is_chaos else 0.675,
+            )
             dp_list.append(dp)
             dp.move_to(dp_location - dp_loc_offset)
 
@@ -318,9 +318,9 @@ class Scene4(ComplexScene):
             MoveRelative(dp,
                          dp.rod1.get_start(),
                          dp_location + (0.5 if not is_chaos else 0.2) * UP,
-                         rate_func=anticipate,)
+                         rate_func=anticipate, )
         )
-        for i, (ax, dp, dp_location) in enumerate(zip(axes, dp_list, dp_locations))
+            for i, (ax, dp, dp_location) in enumerate(zip(axes, dp_list, dp_locations))
         ])
 
         av_list = []
@@ -473,7 +473,7 @@ class Scene4(ComplexScene):
                                       duration=1.2,
                                       max_opac=0.075  # FR: 0.075  # test with 0.5
                                       )
-        self.play(FadeIn(dp_title, shift=UP*5, scale=2, run_time=1),
+        self.play(FadeIn(dp_title, shift=UP * 5, scale=2, run_time=1),
                   Wiggle(VGroup(plot.start_dot, plot.tracer), 2, run_time=1))
         self.play(DrawPlot(plot, main_dp.data_factory.t_span),
                   ReleaseGhosts(ghosts, av))
@@ -718,7 +718,7 @@ class Scene5(ComplexScene):
             weight=MEDIUM
         ).scale(0.35).next_to(cs_bg_rect, UP, buff=0.05).set_opacity(0)
         cs_group = Group(cs_bg_rect, cs, table_title, table_of_dps).next_to(
-            (config.frame_width / 2) * RIGHT, LEFT,0.05)
+            (config.frame_width / 2) * RIGHT, LEFT, 0.05)
 
         release_table_run_time = 48  # R: 48
 
@@ -1006,10 +1006,9 @@ class Scene5(ComplexScene):
         self.play(MoveRelative(dp_sweeper, dp_sweeper.rod1.get_start(), LEFT * 4 + UP * 2),
                   FadeIn(cs, shift=LEFT * 4, scale=0.5))
 
-
         self.add(dp_sweeper_av)
         self.play(MoveRelative(dp_group, dp_sweeper.rod1.get_start(), LEFT * 5.5, run_time=2),
-            ManualDoublePendulumAnimation(dp_sweeper, (31, 161), 2, smooth))
+                  ManualDoublePendulumAnimation(dp_sweeper, (31, 161), 2, smooth))
 
         self.wait(2)
         table_of_dps = TableOfDoublePendulums(cs, 40, 40)
@@ -1245,6 +1244,7 @@ class Scene6(ComplexScene):
         ).move_to(static_tracker_location)
 
         return tracker, static_tracker_copy
+
     # endregion
 
     def setup(self):
@@ -1261,17 +1261,17 @@ class Scene6(ComplexScene):
         cs = DynamicAxes(
             x_range=(-180, 180),
             y_range=(-180, 180),
-            x_length=(pixel_length / SCENE_PIXELS) * (6/7),
-            y_length=(pixel_length / SCENE_PIXELS) * (6/7),
+            x_length=(pixel_length / SCENE_PIXELS) * (6 / 7),
+            y_length=(pixel_length / SCENE_PIXELS) * (6 / 7),
             x_is_in_degrees=True,
             y_is_in_degrees=True,
-            font_size_x=20 * (6/7),
-            font_size_y=20 * (6/7),
+            font_size_x=20 * (6 / 7),
+            font_size_y=20 * (6 / 7),
             include_zero_lines=False,
             use_constant_tick_length=True,
-            x_line_to_number_buff=0.125 * (6/7),
-            y_line_to_number_buff=0.125 * (6/7),
-            tick_length=0.015 * (6/7)
+            x_line_to_number_buff=0.125 * (6 / 7),
+            y_line_to_number_buff=0.125 * (6 / 7),
+            tick_length=0.015 * (6 / 7)
         ).shift(LEFT * 3.4).set_z_index(2)
         cs_bg_rect = cs.get_background_rectangle().set_z_index(0)
         cs_group = Group(cs, cs_bg_rect)
@@ -1488,7 +1488,7 @@ class Scene6(ComplexScene):
             rate_func=anticipate
         )
         # endregion
-        
+
         # region scene 6.4 mobjects
         for submob in cs2.submobjects:
             submob.set_z_index(6)
@@ -1524,7 +1524,7 @@ class Scene6(ComplexScene):
                 FadeReplacementTransform(tracker.copy(), static_tracker_copy, **anims_kwargs)
             )
         # endregion
-        
+
         # region scene 6.4 animations
         self.play(AnimationGroup(*dp_to_tracker_anims, lag_ratio=0))
         cs.set_z_index(9)
@@ -2049,7 +2049,7 @@ class Scene6(ComplexScene):
         label_text_kwargs = {"color": WHITE}
         quad_pixel_visual = CrispPixelStaticVisuals(cs, TCF.divide_by_quadrant).set_z_index(-1)
 
-        #LABELS
+        # LABELS
         cs_width = MeasureLabel(
             label=Text("2000 px", **label_text_kwargs).scale(0.4),
             start=cs.bg_rectangle.get_corner(UL),
@@ -2130,7 +2130,7 @@ class Scene6(ComplexScene):
                 text.scale(0.375).move_to(LEFT * 4)
 
         Group(texts[3], texts[4], texts[5], texts[6]
-                               ).arrange(DOWN, 1.2, aligned_edge=LEFT).move_to(LEFT * 5)
+              ).arrange(DOWN, 1.2, aligned_edge=LEFT).move_to(LEFT * 5)
         center_group = Group(quad_pixel_visual, cs)
 
         dp_sweeper = UnionDoublePendulumConstructor(
@@ -2207,7 +2207,7 @@ class Scene6(ComplexScene):
             )
             dp_copy = dp_group[i].copy()
             self.play(dp_copy.animate.scale((table_dps.rod_length / dp_copy.length_1) * 4).move_to(locations[i]),
-                                            run_time=1.5)
+                      run_time=1.5)
             self.play(ShrinkToCenter(dp_copy, rate_func=rush_from, run_time=1.5))
             self.wait(0.5)
         self.wait()
@@ -2256,7 +2256,7 @@ class Scene6(ComplexScene):
             (98, 104),
             (113, 117),
             5.5,
-            5.5 * (2/3),
+            5.5 * (2 / 3),
             1.87 * DOWN + 4.17 * RIGHT,
             [UL, UR],
             16, 16,
@@ -2485,7 +2485,7 @@ class Scene6(ComplexScene):
             (60, 140),
             (70, 120),
             5.5,
-            5.5 * (5/8),
+            5.5 * (5 / 8),
             2 * UP + 4.17 * RIGHT,
             [UL, DL],
             16, 16,
@@ -2500,7 +2500,7 @@ class Scene6(ComplexScene):
             (98, 104),
             (113, 117),
             5.5,
-            5.5 * (2/3),
+            5.5 * (2 / 3),
             1.87 * DOWN + 4.17 * RIGHT,
             [UL, UR],
             16, 16,
@@ -2524,7 +2524,7 @@ class Scene6(ComplexScene):
         """
         self.add(center_group, outgrowth_ur, island_dr)
         # self.wait()
-        duration_of_pixel_vis = 520 # 520
+        duration_of_pixel_vis = 520  # 520
 
         animation1 = PixelVisualizationAnimation(quad_pixel_visual, duration_of_pixel_vis, "anim1", True)
         animation2 = PixelVisualizationAnimation(outgrowth_ur.inset_pixel_visual, duration_of_pixel_vis, "anim2", True)
@@ -2541,7 +2541,7 @@ class Scene6(ComplexScene):
         quad_pixel_visual = CrispPixelStaticVisuals(cs, TCF.divide_by_quadrant).set_z_index(-1)
         self.add(quad_pixel_visual)
         anim = PixelVisualizationAnimation(quad_pixel_visual, 20, "example_anim")
-        anim.interpolate(1163/1200)
+        anim.interpolate(1163 / 1200)
 
 
 class Scene7(ComplexScene):
@@ -2576,7 +2576,7 @@ class Scene7(ComplexScene):
     def scene7_1(self):
         cs7_1 = get_standard_cs().set_z_index(2)
         cs7_2 = get_standard_cs((99, 103), (113, 117)).set_z_index(2)
-        cs7_2_destination = cs7_2.copy().scale(6/7).move_to(RIGHT * config.frame_width / 4)
+        cs7_2_destination = cs7_2.copy().scale(6 / 7).move_to(RIGHT * config.frame_width / 4)
         cs7_2_bg_rect = cs7_2.get_background_rectangle()
         cs7_2_destination_bg_rect = cs7_2_destination.get_background_rectangle()
 
@@ -2594,12 +2594,12 @@ class Scene7(ComplexScene):
 
         def update_rect_on_axes(rect):
             new_rect = cs7_1.create_rect_on_axes(
-            cs7_2.dyn_x_range, cs7_2.dyn_y_range).set_stroke(
+                cs7_2.dyn_x_range, cs7_2.dyn_y_range).set_stroke(
                 DARK_BROWN, stroke_tracker.get_value()
             ).set_z_index(1)
             rect.become(new_rect)
 
-        self.play(FadeIn(cs7_1, table_title, pixel_visual, scale=0,  rate_func=smootherstep))
+        self.play(FadeIn(cs7_1, table_title, pixel_visual, scale=0, rate_func=smootherstep))
         self.play(AnimationGroup(
             FocusOn(rect_on_axes.get_center()),
             Create(rect_on_axes),
@@ -2611,7 +2611,7 @@ class Scene7(ComplexScene):
             cs7_2.dyn_x_range,
             cs7_2.dyn_y_range,
             10, smoothstep
-        ),FadeOut(table_title, run_time=4),
+        ), FadeOut(table_title, run_time=4),
             ApplyMethod(stroke_tracker.set_value, 4, run_time=10, rate_func=rush_into)
         )
         rect_on_axes.clear_updaters()
@@ -2647,12 +2647,12 @@ class Scene7(ComplexScene):
         self.play(ManualDoublePendulumAnimation(dp, (main_dp.init_angle_1, main_dp.init_angle_2), 1))
         self.play(IndicateFlip(main_dp, self, av, 40))  # R: 40
 
-    @ignore
+    @run
     def scene7_3_colortracker_intro(self):
         cs = get_standard_cs().set_z_index(2)
         cs_bg_rect = cs.get_background_rectangle()
 
-        pixel_num = 40  # R: 40
+        pixel_num = 20  # R: 40
 
         table = TableOfDoublePendulums(cs, pixel_num, pixel_num).set_z_index(1)
         table2 = TableOfDoublePendulums(cs, pixel_num, pixel_num,
@@ -2670,24 +2670,26 @@ class Scene7(ComplexScene):
             pixel_num,
             color_func_index=6
         )
+        self.next_section(skip_animations=True)
+        self.play(FadeIn(VGroup(table, cs, cs_bg_rect, table_title), scale=0, shift=UP * 3, rate_func=smootherstep))
+        self.play(
+            FadeIn(flip_visual, run_time=2),
+            ReplacementTransform(table, table2, run_time=2)
+        )
+        self.play(FadeIn(color_tracker, shift=3 * LEFT, rate_func=smootherstep))
+        self.play(RunColorTracker(color_tracker, 2, 5 / color_tracker.elapsed_time, smoothererstep))
+        self.play(RunColorTracker(color_tracker, 2, 15 / color_tracker.elapsed_time, smoothererstep))
+        self.play(RunColorTracker(color_tracker, 2, 0, smoothererstep))
+        self.next_section(skip_animations=False)
+        self.play(FlipVisualization(
+            flip_visual,
+            color_tracker,
+            table2,
+            color_tracker.elapsed_time,
+            target_flip_number=4
+        ))
 
-        self.play(FadeIn(VGroup(table, cs, cs_bg_rect, table_title), scale=0, shift=UP*3, rate_func=smootherstep))
-        # self.play(
-        #     FadeIn(flip_visual, run_time=2),
-        #     ReplacementTransform(table, table2, run_time=2)
-        # )
-        # self.play(FadeIn(color_tracker, shift=3 * LEFT, rate_func=smootherstep))
-        # self.play(RunColorTracker(color_tracker, 2, 5/color_tracker.elapsed_time, smoothererstep))
-        # self.play(RunColorTracker(color_tracker, 2, 15/color_tracker.elapsed_time, smoothererstep))
-        # self.play(RunColorTracker(color_tracker, 2, 0, smoothererstep))
-        # self.play(FlipVisualization(
-        #     flip_visual,
-        #     color_tracker,
-        #     table2,
-        #     color_tracker.elapsed_time
-        # ))
-
-    @ignore # MAX_GB = 3.5
+    @ignore  # MAX_GB = 3.5
     def scene7_4_high_quality(self):
         cs = get_standard_cs().set_z_index(2)
         cs_bg_rect = cs.get_background_rectangle().set_z_index(-5)
@@ -2755,7 +2757,7 @@ class Scene7(ComplexScene):
         cs_bg_rect = cs.get_background_rectangle()
         table_title = Text(
             "ALL POSSIBLE INITIAL POSITIONS",
-            fill_color=LIGHT_BROWN,
+            fill_color=AMBER_ORANGE,
             font="Montserrat Medium",
         ).scale(0.35).next_to(cs_bg_rect, UP, buff=0.05)
         color_tracker = self.create_vert_color_tracker()
@@ -2767,9 +2769,74 @@ class Scene7(ComplexScene):
             color_tracker,
             duration=color_tracker.elapsed_time,
             use_existing_dat='scene7_4_testing_',
-            skip_processing=False
+            skip_processing=False,
+            target_flip_number=1,
         ))
         self.wait()
+
+    @ignore
+    def multiple_flips_viz2(self):
+        color_tracker = ColorTracker(
+            RAINBOW,
+            70,  # FR: 70
+            10,
+            False,
+            0.5,
+            (pixel_length / SCENE_PIXELS) + 0.25,
+            color_rate_func=steep_slow_into,  # FR: steep_slow_into
+            arrow_length_level=4,
+        ).shift(6.5 * RIGHT).set_z_index(-7)
+
+        use_existing_list = ["viz1st_", "viz_2nd_", "viz_3rd_", "viz_4th_", "viz_5th_", "viz_6th_"]
+        flips_visualize_kwargs = {
+            "color_tracker": color_tracker,
+            "table": None,
+            "duration": color_tracker.elapsed_time,
+            "skip_processing": False,
+        }
+        group = Group()
+        flip_anims = []
+        for i in range(1, 7):
+            cs = DynamicAxes(
+                x_range=(-180, 180),
+                y_range=(-180, 180),
+                x_length=3.6,
+                y_length=3.6,
+                x_is_in_degrees=True,
+                y_is_in_degrees=True,
+                font_size_x=15,
+                font_size_y=15,
+                include_zero_lines=False,
+                use_constant_tick_length=True,
+                x_line_to_number_buff=0.1225,
+                y_line_to_number_buff=0.1225,
+                labeled_values_for_x_override=[-180, -90, 0, 90, 180],
+                labeled_values_for_y_override=[-180, -90, 0, 90, 180],
+                tick_length=0.008
+            ).set_z_index(5)
+            cs_bg_rect = cs.get_background_rectangle().set_z_index(-5)
+            suffix = ["st", "nd", "rd", "th", "th", "th"][i - 1]
+            title = Text(
+                f"ALL POSSIBLE INITIAL POSITIONS ({i}{suffix} flip)",
+                fill_color=AMBER_ORANGE,
+                font="Montserrat",
+                weight=MEDIUM
+            ).scale(0.2).next_to(cs_bg_rect, UP, buff=0.018)
+            flip_visual = CrispFlipStaticVisuals(cs)
+            group.add(Group(cs, title, flip_visual))
+
+            flip_anims.append(FlipVisualization(
+                flip_visual,
+                target_flip_number=i,
+                use_existing_dat=use_existing_list[i - 1],
+                **flips_visualize_kwargs
+            ))
+
+        group.arrange_in_grid(2, 3, buff=SMALL_BUFF / 2).shift(LEFT * 0.75)
+
+        self.add(color_tracker, group)
+        self.wait()
+        self.play(AnimationGroup(*flip_anims))
 
     @ignore
     def scene7_5_more_gradients_and_insets(self):
@@ -2821,7 +2888,7 @@ class Scene7(ComplexScene):
                 submob.set_z_index(3)
             if i <= 3:
                 self.play(FadeIn(inset, run_time=0.5, scale=0.3, shift=LEFT * 4))
-        self.play(FadeIn(color_tracker, shift= RIGHT * 7, run_time=1))
+        self.play(FadeIn(color_tracker, shift=RIGHT * 7, run_time=1))
         use_existing_list = ["scene7_5_1st_", "scene7_5_2nd_", "scene7_5_3rd_", "scene7_5_4th_",
                              "scene7_5_5th_", "scene7_5_sub_"]
         flips_visualize_kwargs = {
@@ -2840,19 +2907,19 @@ class Scene7(ComplexScene):
                 )
             )
         fourth_island_anim = FlipVisualization(
-                insets[-2][0],
-                use_existing_dat=use_existing_list[-2],
-                **flips_visualize_kwargs
-            )
+            insets[-2][0],
+            use_existing_dat=use_existing_list[-2],
+            **flips_visualize_kwargs
+        )
         fourth_island_anim.flip_anim.extra_animate(55, 2, shift=8 * RIGHT, more_mobjects=insets[-2])
         flip_anims.append(fourth_island_anim)
 
         self.add(insets[-1].shift(4 * DOWN))
         sub_island_anim = FlipVisualization(
-                insets[-1][0],
-                use_existing_dat=use_existing_list[-1],
-                **flips_visualize_kwargs
-            )
+            insets[-1][0],
+            use_existing_dat=use_existing_list[-1],
+            **flips_visualize_kwargs
+        )
         sub_island_anim.flip_anim.extra_animate(56, 1, shift=4 * UP, more_mobjects=insets[-1])
         flip_anims.append(sub_island_anim)
 
@@ -2882,7 +2949,98 @@ class Scene7(ComplexScene):
             run_time=2
         ))
 
-    @ignore # 30 fps
+    @ignore
+    def multiple_flips_viz(self):
+        cs = get_standard_cs().set_z_index(2)
+        cs_bg_rect = cs.get_background_rectangle()
+        table_title = Tex(
+            "ALL POSSIBLE ", "INITIAL ", "POSITIONS", " (2nd flip)",
+            fill_color=AMBER_ORANGE,
+            font_size=20,
+            tex_template=get_font_for_tex("Montserrat Medium")
+        ).next_to(cs_bg_rect, UP, buff=0.05)
+        flip_vis_inset = CrispFlipStaticVisuals(cs)
+        orig_group = Group(flip_vis_inset, cs, table_title)
+
+        self.add(orig_group)
+        self.next_section(skip_animations=True)
+        self.play(orig_group.animate.scale(
+            scale_value, about_point=ORIGIN
+        ).shift(shift_value))
+        cs.x_length *= scale_value
+        cs.y_length *= scale_value
+        cs_bg_rect.scale(scale_value).shift(shift_value)
+
+        flip_vis_inset.replace(CrispFlipStaticVisuals(cs).shift(shift_value))
+        insets = get_four_insets(flip_vis_inset, True)
+        insets.append(InsetScaffold(
+            insets[2].inset_image,
+            (-34, -29),
+            (-153, -148),
+            3.8,
+            3.8,
+            2 * DOWN + 5.1 * RIGHT,
+            [UL, DL],
+            include_image=True
+        ))
+
+        color_tracker = ColorTracker(
+            self.get_new_rainbow(),
+            50,
+            10,
+            True,
+            0.5,
+            cs_bg_rect.length_over_dim(0),
+            color_rate_func=slow_into,
+            radius=0.125
+        ).next_to(cs_bg_rect, DOWN, 0.375).set_z_index(20)
+
+        for i, inset in enumerate(insets):
+            for submob in inset.submobjects[1:]:
+                submob.set_z_index(3)
+            if i <= 3:
+                self.play(FadeIn(inset, run_time=0.5, scale=0.3, shift=LEFT * 4))
+        self.play(FadeIn(color_tracker, shift=RIGHT * 7, run_time=1))
+        use_existing_list = ["scene7_5_1st_", "scene7_5_2nd_", "scene7_5_3rd_", "scene7_5_4th_",
+                             "scene7_5_5th_", "scene7_5_sub_"]
+        flips_visualize_kwargs = {
+            "color_tracker": color_tracker,
+            "table": None,
+            "duration": color_tracker.elapsed_time,
+            "skip_processing": False,
+            "target_flip_number": 2
+        }
+        flip_anims = []
+        for inset, ued in zip([flip_vis_inset, *insets[:-2]], use_existing_list[:-2]):
+            flip_anims.append(
+                FlipVisualization(
+                    inset[0],
+                    use_existing_dat=ued,
+                    **flips_visualize_kwargs
+                )
+            )
+        fourth_island_anim = FlipVisualization(
+            insets[-2][0],
+            use_existing_dat=use_existing_list[-2],
+            **flips_visualize_kwargs
+        )
+        fourth_island_anim.flip_anim.extra_animate(55, 2, shift=8 * RIGHT, more_mobjects=insets[-2])
+        flip_anims.append(fourth_island_anim)
+
+        self.add(insets[-1].shift(4 * DOWN))
+        sub_island_anim = FlipVisualization(
+            insets[-1][0],
+            use_existing_dat=use_existing_list[-1],
+            **flips_visualize_kwargs
+        )
+        sub_island_anim.flip_anim.extra_animate(56, 1, shift=4 * UP, more_mobjects=insets[-1])
+        flip_anims.append(sub_island_anim)
+
+        self.next_section(skip_animations=False)
+        self.wait()
+        self.play(AnimationGroup(*flip_anims))
+
+    @ignore  # 30 fps
     def scene7_8_zooming_checking_fractal2_just_flip_visuals(self):
         cs = get_standard_cs().set_z_index(2)
         cs_bg_rect = cs.get_background_rectangle()
@@ -2929,7 +3087,6 @@ class Scene7(ComplexScene):
                 **params
             ))
 
-
     @ignore
     def scene7_8_testing(self):
         cs = get_standard_cs(
@@ -2971,6 +3128,7 @@ if __name__ == "__main__":
         "Scene7",  # 3
     ]
 
+
     @timer
     def run_manim_scene(index):
         scene_to_render = scenes[index]
@@ -2982,7 +3140,7 @@ if __name__ == "__main__":
             subprocess.run(['manim', 'chaos_theory.py', scene_to_render])
 
 
-    run_manim_scene(0)
+    run_manim_scene(3)
 
     print(f"leftover memmaps: (should return nothing)")
     delete_memmap_files(
