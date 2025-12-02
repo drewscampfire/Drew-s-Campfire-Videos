@@ -303,7 +303,9 @@ class S_edits(BlendScene):
 class Scene2E(BlendScene):
     def construct(self):
         for i, obj in enumerate(first_pendulum_objects):
-            obj.animate_location((0, -1 + i / 267.589, 0), 1)
+            obj.animate_location((0, -1 + i / 35, 0), 1)
+        for obj in first_pendulum_objects + second_pendulum_objects:
+            obj.obj.scale[1] = 0.55
 
         for obj in [first_pendulum_objects[-1], second_pendulum_objects[-1]]:
             obj.visible_camera = True

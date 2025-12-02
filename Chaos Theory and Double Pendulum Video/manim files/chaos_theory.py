@@ -2647,12 +2647,12 @@ class Scene7(ComplexScene):
         self.play(ManualDoublePendulumAnimation(dp, (main_dp.init_angle_1, main_dp.init_angle_2), 1))
         self.play(IndicateFlip(main_dp, self, av, 40))  # R: 40
 
-    @ignore
+    @run
     def scene7_3_colortracker_intro(self):
         cs = get_standard_cs().set_z_index(2)
         cs_bg_rect = cs.get_background_rectangle()
 
-        pixel_num = 40  # R: 40
+        pixel_num = 20  # R: 40
 
         table = TableOfDoublePendulums(cs, pixel_num, pixel_num).set_z_index(1)
         table2 = TableOfDoublePendulums(cs, pixel_num, pixel_num,
@@ -2670,22 +2670,24 @@ class Scene7(ComplexScene):
             pixel_num,
             color_func_index=6
         )
-
+        self.next_section(skip_animations=True)
         self.play(FadeIn(VGroup(table, cs, cs_bg_rect, table_title), scale=0, shift=UP*3, rate_func=smootherstep))
-        # self.play(
-        #     FadeIn(flip_visual, run_time=2),
-        #     ReplacementTransform(table, table2, run_time=2)
-        # )
-        # self.play(FadeIn(color_tracker, shift=3 * LEFT, rate_func=smootherstep))
-        # self.play(RunColorTracker(color_tracker, 2, 5/color_tracker.elapsed_time, smoothererstep))
-        # self.play(RunColorTracker(color_tracker, 2, 15/color_tracker.elapsed_time, smoothererstep))
-        # self.play(RunColorTracker(color_tracker, 2, 0, smoothererstep))
-        # self.play(FlipVisualization(
-        #     flip_visual,
-        #     color_tracker,
-        #     table2,
-        #     color_tracker.elapsed_time
-        # ))
+        self.play(
+            FadeIn(flip_visual, run_time=2),
+            ReplacementTransform(table, table2, run_time=2)
+        )
+        self.play(FadeIn(color_tracker, shift=3 * LEFT, rate_func=smootherstep))
+        self.play(RunColorTracker(color_tracker, 2, 5/color_tracker.elapsed_time, smoothererstep))
+        self.play(RunColorTracker(color_tracker, 2, 15/color_tracker.elapsed_time, smoothererstep))
+        self.play(RunColorTracker(color_tracker, 2, 0, smoothererstep))
+        self.next_section(skip_animations=False)
+        self.play(FlipVisualization(
+            flip_visual,
+            color_tracker,
+            table2,
+            color_tracker.elapsed_time,
+            target_flip_number=4
+        ))
 
     @ignore # MAX_GB = 3.5
     def scene7_4_high_quality(self):
@@ -2772,7 +2774,7 @@ class Scene7(ComplexScene):
         ))
         self.wait()
 
-    @run
+    @ignore
     def multiple_flips_viz2(self):
         color_tracker = ColorTracker(
             RAINBOW,

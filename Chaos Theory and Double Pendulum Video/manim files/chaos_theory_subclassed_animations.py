@@ -1027,6 +1027,7 @@ class ReleaseTableOfDoublePendulumsUntilFlip(ReleaseTableOfDoublePendulums):
             self,
             table_of_double_pendulums: TableOfDoublePendulums,
             duration: float,
+            target_flip_number: int = 1,
             **kwargs
     ):
         super().__init__(
@@ -1043,7 +1044,7 @@ class ReleaseTableOfDoublePendulumsUntilFlip(ReleaseTableOfDoublePendulums):
             table_of_double_pendulums.row_count,
             table_of_double_pendulums.column_count,
         )
-        self.flip_index_data = pixel_computation.get_flips_index_data(duration).reshape(
+        self.flip_index_data = pixel_computation.get_flips_index_data(duration, target_flip_number=target_flip_number).reshape(
             table_of_double_pendulums.row_count,
             table_of_double_pendulums.column_count)
         self.flip_index_data = np.rot90(self.flip_index_data, k=-1).ravel()
@@ -1082,6 +1083,7 @@ class FlipVisualization(AnimationGroup):
             color_tracker: ColorTracker,
             table: TableOfDoublePendulums | None = None,
             duration: float = 13,
+            target_flip_number: int | None = 1,
             **flip_visuals_kwargs
     ):
         assert color_tracker.elapsed_time == duration, "must match duration and elapsed_time"
@@ -1096,18 +1098,20 @@ class FlipVisualization(AnimationGroup):
             assert row_check, "must match row and height"
             assert col_check, "must match column and width"
 
-            table_anim = ReleaseTableOfDoublePendulumsUntilFlip(table, duration)
+            table_anim = ReleaseTableOfDoublePendulumsUntilFlip(table, duration, target_flip_number=target_flip_number)
             animations.append(table_anim)
 
         tracker_anim = RunColorTracker(color_tracker, duration)
         animations.append(tracker_anim)
 
         if isinstance(flip_visual, FlipStaticVisuals):
-            flip_visual_anim = FlipPixelVisuals(flip_visual, color_tracker, duration, **flip_visuals_kwargs)
+            flip_visual_anim = FlipPixelVisuals(flip_visual, color_tracker, duration,
+                                                target_flip_number=target_flip_number, **flip_visuals_kwargs)
             self.flip_anim = flip_visual_anim
             animations.append(self.flip_anim)
         elif isinstance(flip_visual, BlockyPixels):
-            flip_visual_anim = FlipBlockyPixels(flip_visual, color_tracker, duration, **flip_visuals_kwargs)
+            flip_visual_anim = FlipBlockyPixels(flip_visual, color_tracker, duration,
+                                                target_flip_number=target_flip_number, **flip_visuals_kwargs)
             self.flip_anim = None
             animations.append(flip_visual_anim)
         else:
