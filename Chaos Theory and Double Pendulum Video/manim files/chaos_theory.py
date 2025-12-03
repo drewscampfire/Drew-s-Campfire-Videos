@@ -2647,7 +2647,7 @@ class Scene7(ComplexScene):
         self.play(ManualDoublePendulumAnimation(dp, (main_dp.init_angle_1, main_dp.init_angle_2), 1))
         self.play(IndicateFlip(main_dp, self, av, 40))  # R: 40
 
-    @run
+    @ignore
     def scene7_3_colortracker_intro(self):
         cs = get_standard_cs().set_z_index(2)
         cs_bg_rect = cs.get_background_rectangle()
@@ -2774,7 +2774,7 @@ class Scene7(ComplexScene):
         ))
         self.wait()
 
-    @ignore
+    @run
     def multiple_flips_viz2(self):
         color_tracker = ColorTracker(
             RAINBOW,
@@ -2835,8 +2835,17 @@ class Scene7(ComplexScene):
         group.arrange_in_grid(2, 3, buff=SMALL_BUFF / 2).shift(LEFT * 0.75)
 
         self.add(color_tracker, group)
+        self.next_section(skip_animations=True)
         self.wait()
         self.play(AnimationGroup(*flip_anims))
+        pixel_visual_group = Group()
+        for gr in group:
+            pixel_visual_group.add(gr.submobjects[2])
+        pixel_visual_group.arrange_in_grid(2, 3, buff=SMALL_BUFF / 2).move_to(ORIGIN)
+        self.next_section(skip_animations=False)
+        self.remove(*self.mobjects)
+        self.add(pixel_visual_group)
+        self.wait()
 
     @ignore
     def scene7_5_more_gradients_and_insets(self):
@@ -2948,97 +2957,6 @@ class Scene7(ComplexScene):
             lag_ratio=0.1,
             run_time=2
         ))
-
-    @ignore
-    def multiple_flips_viz(self):
-        cs = get_standard_cs().set_z_index(2)
-        cs_bg_rect = cs.get_background_rectangle()
-        table_title = Tex(
-            "ALL POSSIBLE ", "INITIAL ", "POSITIONS", " (2nd flip)",
-            fill_color=AMBER_ORANGE,
-            font_size=20,
-            tex_template=get_font_for_tex("Montserrat Medium")
-        ).next_to(cs_bg_rect, UP, buff=0.05)
-        flip_vis_inset = CrispFlipStaticVisuals(cs)
-        orig_group = Group(flip_vis_inset, cs, table_title)
-
-        self.add(orig_group)
-        self.next_section(skip_animations=True)
-        self.play(orig_group.animate.scale(
-            scale_value, about_point=ORIGIN
-        ).shift(shift_value))
-        cs.x_length *= scale_value
-        cs.y_length *= scale_value
-        cs_bg_rect.scale(scale_value).shift(shift_value)
-
-        flip_vis_inset.replace(CrispFlipStaticVisuals(cs).shift(shift_value))
-        insets = get_four_insets(flip_vis_inset, True)
-        insets.append(InsetScaffold(
-            insets[2].inset_image,
-            (-34, -29),
-            (-153, -148),
-            3.8,
-            3.8,
-            2 * DOWN + 5.1 * RIGHT,
-            [UL, DL],
-            include_image=True
-        ))
-
-        color_tracker = ColorTracker(
-            self.get_new_rainbow(),
-            50,
-            10,
-            True,
-            0.5,
-            cs_bg_rect.length_over_dim(0),
-            color_rate_func=slow_into,
-            radius=0.125
-        ).next_to(cs_bg_rect, DOWN, 0.375).set_z_index(20)
-
-        for i, inset in enumerate(insets):
-            for submob in inset.submobjects[1:]:
-                submob.set_z_index(3)
-            if i <= 3:
-                self.play(FadeIn(inset, run_time=0.5, scale=0.3, shift=LEFT * 4))
-        self.play(FadeIn(color_tracker, shift=RIGHT * 7, run_time=1))
-        use_existing_list = ["scene7_5_1st_", "scene7_5_2nd_", "scene7_5_3rd_", "scene7_5_4th_",
-                             "scene7_5_5th_", "scene7_5_sub_"]
-        flips_visualize_kwargs = {
-            "color_tracker": color_tracker,
-            "table": None,
-            "duration": color_tracker.elapsed_time,
-            "skip_processing": False,
-            "target_flip_number": 2
-        }
-        flip_anims = []
-        for inset, ued in zip([flip_vis_inset, *insets[:-2]], use_existing_list[:-2]):
-            flip_anims.append(
-                FlipVisualization(
-                    inset[0],
-                    use_existing_dat=ued,
-                    **flips_visualize_kwargs
-                )
-            )
-        fourth_island_anim = FlipVisualization(
-            insets[-2][0],
-            use_existing_dat=use_existing_list[-2],
-            **flips_visualize_kwargs
-        )
-        fourth_island_anim.flip_anim.extra_animate(55, 2, shift=8 * RIGHT, more_mobjects=insets[-2])
-        flip_anims.append(fourth_island_anim)
-
-        self.add(insets[-1].shift(4 * DOWN))
-        sub_island_anim = FlipVisualization(
-            insets[-1][0],
-            use_existing_dat=use_existing_list[-1],
-            **flips_visualize_kwargs
-        )
-        sub_island_anim.flip_anim.extra_animate(56, 1, shift=4 * UP, more_mobjects=insets[-1])
-        flip_anims.append(sub_island_anim)
-
-        self.next_section(skip_animations=False)
-        self.wait()
-        self.play(AnimationGroup(*flip_anims))
 
     @ignore  # 30 fps
     def scene7_8_zooming_checking_fractal2_just_flip_visuals(self):
