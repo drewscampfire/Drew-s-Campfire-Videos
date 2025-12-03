@@ -1264,19 +1264,16 @@ def line_to_rectangle(line: Line) -> Rectangle:
     Returns:
     Rectangle: R Rectangle object representing the line with the specified stroke width.
     """
-    # Calculate the line's length and angle
     line_angle = line.get_angle()
 
-    # Create a rectangle with the desired dimensions
     rectangle = Rectangle(
         width=line.get_length(),
         height=line.stroke_width / 100,
         stroke_width=0,
         fill_opacity=1
     )
-    rectangle.set_color(line.get_color())  # Fill the rectangle if needed
+    rectangle.set_color(line.get_color())
 
-    # Position and rotate the rectangle to align with the line
     rectangle.move_to(line.get_center())
     rectangle.rotate(line_angle)
 
@@ -1288,7 +1285,6 @@ def move_relative_to(obj: Mobject, obj_point: np.ndarray, new_location: np.ndarr
 
 
 def create_accelerating_function(slope, crit):
-    # Ensure crit is within the valid range
     if not 0 <= crit <= 1:
         raise ValueError("crit must be between 0 and 1")
 
@@ -1305,10 +1301,8 @@ def create_accelerating_function(slope, crit):
 
         return [eq1, eq2, eq3]
 
-    # Solve for the coefficients
     a, b, c = fsolve(find_coefficients, [0, 0, linear_value_at_crit])
 
-    # Define the generated function
     def generated_function(t):
         if t <= crit:
             return slope * t
@@ -1364,12 +1358,11 @@ def apply_rate_func_to_scalar_within_bounds(
     if not (lower_bound - tolerance <= scalar <= upper_bound + tolerance):
         raise ValueError(f"scalar {scalar} is not within bounds {bounds}")
 
-    # Clamp scalar to bounds
     scalar = max(lower_bound, min(scalar, upper_bound))
 
     span = upper_bound - lower_bound
     if span < tolerance:
-        return lower_bound  # or upper_bound, they're essentially the same
+        return lower_bound
 
     return rate_func((scalar - lower_bound) / span) * span + lower_bound
 
@@ -1495,7 +1488,6 @@ def create_word_keymap(source_text, target_text):
     source_words = source_text.split()
     target_words = target_text.split()
 
-    # Ensure the key_map is generated correctly for each word
     key_map = {source_words[i]: target_words[i] for i in range(min(len(source_words), len(target_words)))}
 
     return key_map
@@ -1503,9 +1495,7 @@ def create_word_keymap(source_text, target_text):
 
 def get_unique_filename(base_name='all_solutions', extension='.dat', directory=dp_data_file_dir) -> str:
     counter = 1
-    # Combine the directory with the base name and extension
     filename = os.path.join(directory, f"{base_name}{extension}")
-    # Loop until a unique filename is found
     while os.path.exists(filename):
         filename = os.path.join(directory, f"{base_name}_{counter}{extension}")
         counter += 1
@@ -1541,43 +1531,34 @@ def change_pitch(sound, pitch_factor):
 
 
 def z_index_inspector(mobs: List[Mobject], indent_level: int = 0, scene_vars: dict = None, max_items: int = 12) -> None:
-    # Get variable names from calling frame only once at the top level
     if scene_vars is None:
         scene_vars = {id(val): name for name, val in inspect.currentframe().f_back.f_locals.items()}
 
     if indent_level == 0:
-        # Initial setup - only print headers for top level
         print("\nScene Mobjects:")
         print("-" * 50)
         format_str = "{:<6} | {:<30} | {:<20}"
         print(format_str.format("Z-Index", "Variable Name", "Type"))
         print("-" * 50)
 
-    # Format string with indentation
     format_str = "{:<6} | {:<30} | {:<20}"
     indent = "  " * indent_level
 
-    # Limit the number of mobjects to inspect at this level
     limited_mobs = mobs[:max_items]
     total_mobs = len(mobs)
 
     for mob in limited_mobs:
-        # Get class name and variable name
         mob_type = mob.__class__.__name__[:20]
         var_name = scene_vars.get(id(mob), mob.name)[:30]
 
-        # Print current more_mobjects with appropriate indentation
         print(indent + format_str.format(mob.z_index, var_name, mob_type))
 
-        # Recursively print submobjects if this is a Group or VGroup
         if isinstance(mob, (Group, VGroup)) and mob.submobjects:
             z_index_inspector(mob.submobjects, indent_level + 1, scene_vars, max_items)
 
-    # If we limited the output, show how many items were omitted
     if total_mobs > max_items:
         print(indent + format_str.format("...", f"(+{total_mobs - max_items} more items)", "..."))
 
-    # Only print final newline for top-level call
     if indent_level == 0:
         print("\n")
 

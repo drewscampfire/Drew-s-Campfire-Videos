@@ -6,8 +6,8 @@ if torch.cuda.is_available():
 else:
     print(f"\nNo GPU found!\n")
     device = None
-fps = 12
-quality = 'medium_quality'  # ['fourk_quality', 'high_quality', 'medium_quality']
+fps = 24
+quality = 'high_quality'  # ['fourk_quality', 'high_quality', 'medium_quality']
 MAX_GB = 3.5
 config.quality = quality
 config.frame_rate = fps
@@ -24,7 +24,7 @@ else:
     dp_data_file_dir = r'D:\dp_data_files'  # for my system
     Text.set_default(font="Montserrat Medium")
 
-file_type = 'mp4'  # ['mp4', 'png']
+file_type = 'png'  # ['mp4', 'png']
 if file_type == 'png':
     config.format = "png"
     config.save_pngs = True
