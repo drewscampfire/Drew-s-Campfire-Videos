@@ -1433,7 +1433,9 @@ class InsetScaffold(Group):
             include_image: bool = True,
             include_hexagons: bool = True,
             include_return_cs: bool = False,
-            line_to_number_buff: float = 0.125,
+            x_line_to_number_buff: float = 0.125,
+            y_line_to_number_buff: float = 0.125,
+            tick_length:float = 0.01,
             **kwargs
     ):
         super().__init__(**kwargs)
@@ -1455,9 +1457,9 @@ class InsetScaffold(Group):
             font_size_x=font_size_x,
             font_size_y=font_size_y,
             use_constant_tick_length=True,
-            x_line_to_number_buff=line_to_number_buff,
-            y_line_to_number_buff=line_to_number_buff,
-            tick_length=0.01,
+            x_line_to_number_buff=x_line_to_number_buff,
+            y_line_to_number_buff=y_line_to_number_buff,
+            tick_length=tick_length,
         ).shift(location)
 
         if isinstance(self.visuals, PixelStaticVisuals):

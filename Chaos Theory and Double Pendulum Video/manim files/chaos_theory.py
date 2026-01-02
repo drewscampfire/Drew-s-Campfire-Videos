@@ -38,21 +38,31 @@ def get_dp_graph(
     )
 
 
-def get_standard_cs(x_range: tuple[float, float]=(-180, 180), y_range: tuple[float, float]=(-180, 180)):
+def get_standard_cs(
+        x_range: tuple[float, float]=(-180, 180),
+        y_range: tuple[float, float]=(-180, 180),
+        x_length: float = pixel_length / SCENE_PIXELS,
+        y_length: float = pixel_length / SCENE_PIXELS,
+        font_size_x: float = 20,
+        font_size_y: float = 20,
+        x_line_to_number_buff: float = 0.125,
+        y_line_to_number_buff: float = 0.125,
+        tick_length: float = 0.0125
+):
     return DynamicAxes(
             x_range=x_range,
             y_range=y_range,
-            x_length=pixel_length / SCENE_PIXELS,
-            y_length=pixel_length / SCENE_PIXELS,
+            x_length=x_length,
+            y_length=y_length,
             x_is_in_degrees=True,
             y_is_in_degrees=True,
-            font_size_x=20,
-            font_size_y=20,
+            font_size_x=font_size_x,
+            font_size_y=font_size_y,
             include_zero_lines=False,
             use_constant_tick_length=True,
-            x_line_to_number_buff=0.125,
-            y_line_to_number_buff=0.125,
-            tick_length=0.0125
+            x_line_to_number_buff=x_line_to_number_buff,
+            y_line_to_number_buff=y_line_to_number_buff,
+            tick_length=tick_length
     )
 
 
@@ -2545,65 +2555,66 @@ class Scene6(ComplexScene):
 
     @run
     def flips_early(self):
-        self.cs = get_standard_cs().set_z_index(2)
+        inset_side_length = 3.65
+        vert_shift = 1.99
+        hori_shift = 4.25
+        font_size_config = {'font_size_x': 13, 'font_size_y': 13,
+                            'x_line_to_number_buff': 0.12, 'y_line_to_number_buff': 0.12,
+                            'tick_length': 0.01}
+        dp_count_size = 10
+        duration = 16
+        self.cs = get_standard_cs(x_length=inset_side_length, y_length=inset_side_length,
+                                  **font_size_config).set_z_index(2)
         self.cs_bg_rect = self.cs.get_background_rectangle()
         self.table_title = Tex(
             "ALL POSSIBLE ", "INITIAL ", "POSITIONS",
             fill_color=AMBER_ORANGE,
-            font_size=20,
+            font_size=11,
             tex_template=get_font_for_tex("Montserrat Medium")
-        ).next_to(self.cs_bg_rect, UP, buff=0.05)
-        scale_value = 5.5 * SCENE_PIXELS / pixel_length
-        shift_value = 3.9 * LEFT + UP * 0.95
+        ).next_to(self.cs_bg_rect, UP, buff=0.03)
         self.pixel_visual = CrispPixelStaticVisuals(self.cs, TCF.torus_smooth_gradient)
         self.axes_group = Group(self.cs, self.table_title, self.pixel_visual)
-        self.axes_group.scale(scale_value, about_point=ORIGIN).shift(shift_value)
+        self.axes_group.shift(LEFT * hori_shift + DOWN * vert_shift)
 
         # getting the insets
-        inset_side_length = 3.675
-
-        two_islands = InsetScaffold(
+        zoom1 = InsetScaffold(
         self.pixel_visual,
         (-50, -15),
         (-170, -135),
         inset_side_length,
         inset_side_length,
-        1.96 * DOWN + 1.1 * RIGHT,
+        vert_shift * DOWN,
         inset_line_dirs=[UL, DL],
-        include_return_cs=True
+        include_return_cs=True,
+        **font_size_config
         )
-
-        itchy_dp_scaffold = InsetScaffold(
-            two_islands.inset_image,
+        zoom2 = InsetScaffold(
+            zoom1.inset_image,
             (-34, -29),
             (-153, -148),
             inset_side_length,
             inset_side_length,
-            2 * UP + 5.15 * RIGHT,
-            inset_line_dirs=[DL, UR],
-            include_image=False,
-            include_return_cs=True
-        )
-        itchy_cs = itchy_dp_scaffold.cs_island
-        itchy_bg_rect = itchy_cs.get_background_rectangle()
-        itchy_table = TableOfDoublePendulums(
-            itchy_dp_scaffold.cs_island,
-            32,
-            32,
-        )
-        itchy_group = Group(itchy_bg_rect, itchy_cs, itchy_table)
-
-        zoom_ur = InsetScaffold(
-            two_islands.inset_image,
-            (-34, -29),
-            (-153, -148),
-            inset_side_length,
-            inset_side_length,
-            1.96 * DOWN + 5.15 * RIGHT,
+            vert_shift * DOWN + hori_shift * RIGHT,
             inset_line_dirs=[UL, DL],
             include_image=True,
-            include_return_cs=True
+            include_return_cs=True,
+            **font_size_config
         )
+
+        itchy_groups = Group()
+        for x_range, y_range, location in zip(
+            [(-50, -15), (-34, -29)],
+            [(-170, -135), (-153, -148)],
+            [vert_shift * UP, vert_shift * UP + hori_shift * RIGHT]
+        ):
+            itchy_cs = get_standard_cs(x_range, y_range, inset_side_length, inset_side_length,
+            **font_size_config).shift(location)
+            itchy_bg_rect = itchy_cs.get_background_rectangle()
+            itchy_table = TableOfDoublePendulums(
+                itchy_cs, dp_count_size, dp_count_size
+            )
+            itchy_group = Group(itchy_bg_rect, itchy_cs, itchy_table)
+            itchy_groups.add(itchy_group)
 
         thirty_cs = DynamicAxes(
             x_range=(-180, 180),
@@ -2612,15 +2623,9 @@ class Scene6(ComplexScene):
             y_length=inset_side_length,
             x_is_in_degrees=True,
             y_is_in_degrees=True,
-            font_size_x=12,
-            font_size_y=12,
             include_zero_lines=True,
             use_constant_tick_length=True,
-            x_line_to_number_buff=0.125,
-            y_line_to_number_buff=0.125,
-            # labeled_values_for_x_override=[-180, -90, 0, 90, 180],
-            # labeled_values_for_y_override=[-180, -90, 0, 90, 180],
-            tick_length=0.01
+            **font_size_config
         ).set_z_index(2)
         thirty_bg_rect = thirty_cs.get_background_rectangle()
         plot_title = Text(
@@ -2628,31 +2633,54 @@ class Scene6(ComplexScene):
             fill_color=AMBER_ORANGE,
             font="Montserrat",
             weight=MEDIUM
-        ).scale(0.2).next_to(thirty_bg_rect, UP, buff=0.04)
-        thirty_group = Group(thirty_cs, thirty_bg_rect, plot_title).shift(2 * UP + 1.1 * RIGHT,)
+        ).scale(0.18).next_to(thirty_bg_rect, UP, buff=0.03)
+        main_dp = DoublePendulum((0, 0))
+        points = main_dp.get_data_factory(
+            30  # FR: 30
+        ).get_points_for_plotting_two_angles()
+        plot = Plotter(points, thirty_cs, True, 1,
+                       col=[AMBER_ORANGE],
+                       stroke_opa=0.35).set_z_index(1)
+        plot.revert_tracer()
+        thirty_group = Group(
+            thirty_bg_rect,
+            thirty_cs,
+            plot_title,
+            plot
+        ).shift(vert_shift * UP + hori_shift * LEFT)
 
         self.add(
             self.axes_group,
             self.pixel_visual,
-            two_islands,
-            itchy_group,
-            zoom_ur,
+            zoom1,
+            itchy_groups,
+            zoom2,
             thirty_group
         )
-        # self.play(
-        #     PixelVisualizationAnimation(
-        #         self.pixel_visual,
-        #         90,
-        #         "flips_early_main",
-        #         False
-        #         ).extra_animate(
-        #         0,
-        #         0,
-        #         shift=shift_value,
-        #         scale=scale_value,
-        #         rate_func=smoothererstep
-        #         )
-        # )
+        self.wait()
+        self.play(
+            PixelVisualizationAnimation(
+                self.pixel_visual,
+                duration,
+                "flips_early_main",
+                False
+                ),
+            PixelVisualizationAnimation(
+                zoom1.inset_image,
+                duration,
+                "zoom1",
+                False
+            ),
+            PixelVisualizationAnimation(
+                zoom2.inset_image,
+                duration,
+                "zoom2",
+                False
+            ),
+            ReleaseTableOfDoublePendulums(itchy_groups[0][-1], duration),
+            ReleaseTableOfDoublePendulums(itchy_groups[1][-1], duration),
+        )
+        self.wait()
 
 
 class Scene7(ComplexScene):
