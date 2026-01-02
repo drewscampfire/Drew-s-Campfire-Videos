@@ -6,7 +6,7 @@ if torch.cuda.is_available():
 else:
     print(f"\nNo GPU found!\n")
     device = None
-fps = 24
+fps = 12
 quality = 'high_quality'  # ['fourk_quality', 'high_quality', 'medium_quality']
 MAX_GB = 3.5
 config.quality = quality
@@ -28,7 +28,7 @@ file_type = 'png'  # ['mp4', 'png']
 if file_type == 'png':
     config.format = "png"
     config.save_pngs = True
-    use_background = False
+    use_background = True  # False
 elif file_type == 'mp4':
     use_background = True
 else:
@@ -42,8 +42,8 @@ anticipate = rate_functions.ease_in_out_back
 
 
 if quality == 'fourk_quality':
-    rtol = 1e-9
-    atol = 1e-11
+    rtol = 1e-7 # 1e-9
+    atol = 1e-9 # 1e-11
     pixel_length = 2000
     # chunk_size = 5500
 elif quality == 'high_quality':

@@ -2543,6 +2543,117 @@ class Scene6(ComplexScene):
         anim = PixelVisualizationAnimation(quad_pixel_visual, 20, "example_anim")
         anim.interpolate(1163/1200)
 
+    @run
+    def flips_early(self):
+        self.cs = get_standard_cs().set_z_index(2)
+        self.cs_bg_rect = self.cs.get_background_rectangle()
+        self.table_title = Tex(
+            "ALL POSSIBLE ", "INITIAL ", "POSITIONS",
+            fill_color=AMBER_ORANGE,
+            font_size=20,
+            tex_template=get_font_for_tex("Montserrat Medium")
+        ).next_to(self.cs_bg_rect, UP, buff=0.05)
+        scale_value = 5.5 * SCENE_PIXELS / pixel_length
+        shift_value = 3.9 * LEFT + UP * 0.95
+        self.pixel_visual = CrispPixelStaticVisuals(self.cs, TCF.torus_smooth_gradient)
+        self.axes_group = Group(self.cs, self.table_title, self.pixel_visual)
+        self.axes_group.scale(scale_value, about_point=ORIGIN).shift(shift_value)
+
+        # getting the insets
+        inset_side_length = 3.675
+
+        two_islands = InsetScaffold(
+        self.pixel_visual,
+        (-50, -15),
+        (-170, -135),
+        inset_side_length,
+        inset_side_length,
+        1.96 * DOWN + 1.1 * RIGHT,
+        inset_line_dirs=[UL, DL],
+        include_return_cs=True
+        )
+
+        itchy_dp_scaffold = InsetScaffold(
+            two_islands.inset_image,
+            (-34, -29),
+            (-153, -148),
+            inset_side_length,
+            inset_side_length,
+            2 * UP + 5.15 * RIGHT,
+            inset_line_dirs=[DL, UR],
+            include_image=False,
+            include_return_cs=True
+        )
+        itchy_cs = itchy_dp_scaffold.cs_island
+        itchy_bg_rect = itchy_cs.get_background_rectangle()
+        itchy_table = TableOfDoublePendulums(
+            itchy_dp_scaffold.cs_island,
+            32,
+            32,
+        )
+        itchy_group = Group(itchy_bg_rect, itchy_cs, itchy_table)
+
+        zoom_ur = InsetScaffold(
+            two_islands.inset_image,
+            (-34, -29),
+            (-153, -148),
+            inset_side_length,
+            inset_side_length,
+            1.96 * DOWN + 5.15 * RIGHT,
+            inset_line_dirs=[UL, DL],
+            include_image=True,
+            include_return_cs=True
+        )
+
+        thirty_cs = DynamicAxes(
+            x_range=(-180, 180),
+            y_range=(-180, 180),
+            x_length=inset_side_length,
+            y_length=inset_side_length,
+            x_is_in_degrees=True,
+            y_is_in_degrees=True,
+            font_size_x=12,
+            font_size_y=12,
+            include_zero_lines=True,
+            use_constant_tick_length=True,
+            x_line_to_number_buff=0.125,
+            y_line_to_number_buff=0.125,
+            # labeled_values_for_x_override=[-180, -90, 0, 90, 180],
+            # labeled_values_for_y_override=[-180, -90, 0, 90, 180],
+            tick_length=0.01
+        ).set_z_index(2)
+        thirty_bg_rect = thirty_cs.get_background_rectangle()
+        plot_title = Text(
+            "30-SECOND PLOT",
+            fill_color=AMBER_ORANGE,
+            font="Montserrat",
+            weight=MEDIUM
+        ).scale(0.2).next_to(thirty_bg_rect, UP, buff=0.04)
+        thirty_group = Group(thirty_cs, thirty_bg_rect, plot_title).shift(2 * UP + 1.1 * RIGHT,)
+
+        self.add(
+            self.axes_group,
+            self.pixel_visual,
+            two_islands,
+            itchy_group,
+            zoom_ur,
+            thirty_group
+        )
+        # self.play(
+        #     PixelVisualizationAnimation(
+        #         self.pixel_visual,
+        #         90,
+        #         "flips_early_main",
+        #         False
+        #         ).extra_animate(
+        #         0,
+        #         0,
+        #         shift=shift_value,
+        #         scale=scale_value,
+        #         rate_func=smoothererstep
+        #         )
+        # )
+
 
 class Scene7(ComplexScene):
     run = ComplexScene.run
@@ -2774,7 +2885,7 @@ class Scene7(ComplexScene):
         ))
         self.wait()
 
-    @run
+    @ignore
     def multiple_flips_viz2(self):
         color_tracker = ColorTracker(
             RAINBOW,
@@ -2982,7 +3093,7 @@ class Scene7(ComplexScene):
 
         flip_visual = CrispFlipStaticVisuals(
             cs
-        ).turn_to_last_image(color_tracker, use_existing_dat="scene7_8_ending_image_", skip_processing=True)
+        ).turn_to_last_image(color_tracker, use_existing_dat="scene7_8_ending_image_", skip_processing=False)
         zoom_flip_params = [
             {  # index 0
                 "new_x_range": (103.2744, 103.2745),
@@ -2997,21 +3108,21 @@ class Scene7(ComplexScene):
         ]
 
         self.add(cs, color_tracker, flip_visual, table_title)
-        turn_animation_into_updater(FadeOut(table_title, run_time=4))
-        for i, params in enumerate(zoom_flip_params):
-            self.play(ZoomFlipVisuals(
-                flip_visual,
-                zoom_rate_func=linear,
-                use_existing_dat=use_existing_list[i],
-                **params
-            ))
+        # turn_animation_into_updater(FadeOut(table_title, run_time=4))
+        # for i, params in enumerate(zoom_flip_params):
+        #     self.play(ZoomFlipVisuals(
+        #         flip_visual,
+        #         zoom_rate_func=linear,
+        #         use_existing_dat=use_existing_list[i],
+        #         **params
+        #     ))
 
 
     @ignore
     def scene7_8_testing(self):
         cs = get_standard_cs(
-            (103.2744, 103.2745),
-            (116.3204, 116.3205)
+            (161.25, 161.75),
+            (-9.5, -9)
         ).set_z_index(2)
         cs_bg_rect = cs.get_background_rectangle()
         table_title = Tex(
@@ -3022,7 +3133,7 @@ class Scene7(ComplexScene):
         ).next_to(cs_bg_rect, UP, buff=0.05)
         color_tracker = ColorTracker(
             self.get_new_rainbow(),
-            70,  # R: 70
+            50,  # R: 70
             10,
             False,
             0.8,
@@ -3059,7 +3170,7 @@ if __name__ == "__main__":
             subprocess.run(['manim', 'chaos_theory.py', scene_to_render])
 
 
-    run_manim_scene(3)
+    run_manim_scene(2)
 
     print(f"leftover memmaps: (should return nothing)")
     delete_memmap_files(

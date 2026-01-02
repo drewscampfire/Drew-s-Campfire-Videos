@@ -515,3 +515,4 @@ class OptimizedForPixelGridComputation(OptimizedDoublePendulumComputation):
                 index_data_mmap.flush()
 
         return index_data_mmap
+torch.float
