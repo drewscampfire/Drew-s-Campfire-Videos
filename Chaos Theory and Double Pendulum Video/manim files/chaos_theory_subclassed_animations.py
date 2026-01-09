@@ -276,7 +276,7 @@ class AnimateGhostsWithPlot(Animation):
         self.list_of_angle_visualizers = []
         if use_ghosts:
             self.list_of_ghosts = []
-        self.list_of_plots = []
+        self.list_of_plots: list[Plotter] = []
 
         total_iterations = len(self.angle_values_progression)
 
@@ -393,13 +393,23 @@ class MorphPlotWithAddedAxes(AnimateGhostsWithPlot):
             use_ghosts=False,
             **kwargs
         )
-        self.mobject = VGroup(self.plot)
+
+        self.list_of_start_dots = []
+        for plot in tqdm(self.list_of_plots, desc="Processing plots"):
+            start_dot_list = []
+            start_dot_copy = self.list_of_plots[0].start_dot.copy()
+            for cs in list_of_cs:
+                start_dot = start_dot_copy.copy()
+                start_dot.move_to(cs.c2p(plot.passed_points[0]))
+                start_dot_list.append(start_dot)
+            self.list_of_start_dots.append(start_dot_list)
+        self.mobject = VGroup(self.plot, *[self.list_of_start_dots[0]])
 
     def interpolate_mobject(self, alpha: float):
         current_frame = int(alpha * (self.num_of_frames - 1))
         plot = self.list_of_plots[current_frame]
 
-        new_mobject = VGroup(plot)
+        new_mobject = VGroup(plot, *[self.list_of_start_dots[current_frame]])
         self.mobject.become(new_mobject)
 
 

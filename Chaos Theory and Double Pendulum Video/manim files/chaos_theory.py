@@ -2651,6 +2651,15 @@ class Scene6(ComplexScene):
             plot
         ).shift(vert_shift * UP + hori_shift * LEFT)
 
+        list_of_cs = [self.cs, zoom1.cs_island, zoom2.cs_island,
+                 itchy_groups[0][1], itchy_groups[1][1]
+                 ]
+
+        for cs in list_of_cs:
+            print(f"center of cs: {cs.c2p((0, 0, 0))}")
+            print(f"location of cs: {cs.location}")
+        # exit()
+
         self.add(
             self.axes_group,
             self.pixel_visual,
@@ -2684,8 +2693,8 @@ class Scene6(ComplexScene):
             MorphPlotWithAddedAxes(
                 main_dp,
                 plot,
-                (90, 90),
-                [],
+                (30, -150),
+                list_of_cs,
                 run_time=3,
             )
         )

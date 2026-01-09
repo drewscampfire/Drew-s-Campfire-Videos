@@ -235,7 +235,12 @@ def get_indices_with_all_zeroes(array: np.memmap, chunk_size: int = 50000) -> li
     return results
 
 
-
+def get_shape_of_list(lst):
+    if not isinstance(lst, list):
+        return ()
+    if not lst:
+        return (0,)
+    return (len(lst),) + get_shape_of_list(lst[0])
 
 
 
