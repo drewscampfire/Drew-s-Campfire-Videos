@@ -2561,6 +2561,8 @@ class Scene6(ComplexScene):
         font_size_config = {'font_size_x': 13, 'font_size_y': 13,
                             'x_line_to_number_buff': 0.12, 'y_line_to_number_buff': 0.12,
                             'tick_length': 0.01}
+        inset_1_range = [(-45, -20), (-167.5, -142.5)]
+        inset_2_range = [(-33.5, -28.5), (-153, -148)]
         dp_count_size = 10
         duration = 16
         self.cs = get_standard_cs(x_length=inset_side_length, y_length=inset_side_length,
@@ -2579,8 +2581,8 @@ class Scene6(ComplexScene):
         # getting the insets
         zoom1 = InsetScaffold(
         self.pixel_visual,
-        (-50, -15),
-        (-170, -135),
+        inset_1_range[0],
+        inset_1_range[1],
         inset_side_length,
         inset_side_length,
         vert_shift * DOWN,
@@ -2590,8 +2592,8 @@ class Scene6(ComplexScene):
         )
         zoom2 = InsetScaffold(
             zoom1.inset_image,
-            (-34, -29),
-            (-153, -148),
+            inset_2_range[0],
+            inset_2_range[1],
             inset_side_length,
             inset_side_length,
             vert_shift * DOWN + hori_shift * RIGHT,
@@ -2603,8 +2605,8 @@ class Scene6(ComplexScene):
 
         itchy_groups = Group()
         for x_range, y_range, location in zip(
-            [(-50, -15), (-34, -29)],
-            [(-170, -135), (-153, -148)],
+            [inset_1_range[0], inset_2_range[0]],
+            [inset_1_range[1], inset_2_range[1]],
             [vert_shift * UP, vert_shift * UP + hori_shift * RIGHT]
         ):
             itchy_cs = get_standard_cs(x_range, y_range, inset_side_length, inset_side_length,
@@ -2659,26 +2661,33 @@ class Scene6(ComplexScene):
         )
         self.wait()
         self.play(
-            PixelVisualizationAnimation(
-                self.pixel_visual,
-                duration,
-                "flips_early_main",
-                False
-                ),
-            PixelVisualizationAnimation(
-                zoom1.inset_image,
-                duration,
-                "zoom1",
-                False
-            ),
-            PixelVisualizationAnimation(
-                zoom2.inset_image,
-                duration,
-                "zoom2",
-                False
-            ),
-            ReleaseTableOfDoublePendulums(itchy_groups[0][-1], duration),
-            ReleaseTableOfDoublePendulums(itchy_groups[1][-1], duration),
+            # PixelVisualizationAnimation(
+            #     self.pixel_visual,
+            #     duration,
+            #     "flips_early_main",
+            #     False
+            #     ),
+            # PixelVisualizationAnimation(
+            #     zoom1.inset_image,
+            #     duration,
+            #     "zoom1",
+            #     False
+            # ),
+            # PixelVisualizationAnimation(
+            #     zoom2.inset_image,
+            #     duration,
+            #     "zoom2",
+            #     False
+            # ),
+            # ReleaseTableOfDoublePendulums(itchy_groups[0][-1], duration),
+            # ReleaseTableOfDoublePendulums(itchy_groups[1][-1], duration),
+            MorphPlotWithAddedAxes(
+                main_dp,
+                plot,
+                (90, 90),
+                [],
+                run_time=3,
+            )
         )
         self.wait()
 
@@ -3100,7 +3109,7 @@ class Scene7(ComplexScene):
 
     @ignore # 30 fps
     def scene7_8_zooming_checking_fractal2_just_flip_visuals(self):
-        cs = get_standard_cs().set_z_index(2)
+        cs = get_standard_cs((45, 180), (45, 180)).set_z_index(2)
         cs_bg_rect = cs.get_background_rectangle()
         table_title = Tex(
             "ALL POSSIBLE ", "INITIAL ", "POSITIONS",

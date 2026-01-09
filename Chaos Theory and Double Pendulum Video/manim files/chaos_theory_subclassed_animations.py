@@ -237,6 +237,7 @@ class AnimateGhostsWithPlot(Animation):
             rate_func: Callable[[float], float] = smoothstep,
             use_rate_func_of_plot: bool = False,
             use_spiral_angle_progression: bool = False,
+            use_ghosts: bool = True,
             **kwargs
     ):
         super().__init__(
@@ -249,13 +250,17 @@ class AnimateGhostsWithPlot(Animation):
             run_time=run_time,
             **kwargs
         )
-        self.ghosts = ghosts
+        self.ghosts = ghosts if use_ghosts else None
         self.plot = plot
         self.new_angle_pair = new_angle_pair
         self.scene = scene
         self.main_dp = ghosts.main_dp
         self.duration = ghosts.duration
-        self.old_angle_pair = self.ghosts.main_dp.double_pendulum.angle_pair
+        self.use_ghosts = use_ghosts
+        if use_ghosts:
+            self.old_angle_pair = self.ghosts.main_dp.double_pendulum.angle_pair
+        else:
+            self.old_angle_pair = self.main_dp.double_pendulum.angle_pair
         self.num_of_frames = int(run_time * fps)
 
         if not use_spiral_angle_progression:
@@ -269,7 +274,8 @@ class AnimateGhostsWithPlot(Animation):
 
         self.list_of_main_dps = []
         self.list_of_angle_visualizers = []
-        self.list_of_ghosts = []
+        if use_ghosts:
+            self.list_of_ghosts = []
         self.list_of_plots = []
 
         total_iterations = len(self.angle_values_progression)
@@ -277,19 +283,21 @@ class AnimateGhostsWithPlot(Animation):
         for i, angle_pair in tqdm(enumerate(self.angle_values_progression), total=total_iterations,
                                   desc="Generating DP, AV, Ghosts, and Plot"):
             main_dp = DoublePendulum(angle_pair)
-            dp = main_dp.create_double_pendulum(
-                self.main_dp.double_pendulum.length_1,
-                self.main_dp.double_pendulum.length_2
-            )
-            move_relative_to(dp, dp.rod1.get_start(), self.main_dp.double_pendulum.rod1.get_start())
-            av = dp.create_angle_visualizer()
-            ghosts = DoublePendulumGhosts(
-                main_dp,
-                ghosts.override_fps,
-                self.duration,
-                self.ghosts.max_opacity,
-                self.ghosts.opacity_rate_func
-            )
+            if use_ghosts:
+                dp = main_dp.create_double_pendulum(
+                    self.main_dp.double_pendulum.length_1,
+                    self.main_dp.double_pendulum.length_2
+                )
+                move_relative_to(dp, dp.rod1.get_start(), self.main_dp.double_pendulum.rod1.get_start())
+                av = dp.create_angle_visualizer()
+
+                ghosts = DoublePendulumGhosts(
+                    main_dp,
+                    ghosts.override_fps,
+                    self.duration,
+                    self.ghosts.max_opacity,
+                    self.ghosts.opacity_rate_func
+                )
             dp_duration = len(self.plot.passed_points) / fps
             points = main_dp.get_data_factory(
                 dp_duration,
@@ -304,8 +312,9 @@ class AnimateGhostsWithPlot(Animation):
             )
 
             self.list_of_main_dps.append(main_dp)
-            self.list_of_angle_visualizers.append(av)
-            self.list_of_ghosts.append(ghosts)
+            if use_ghosts:
+                self.list_of_angle_visualizers.append(av)
+                self.list_of_ghosts.append(ghosts)
             self.list_of_plots.append(plot)
 
     def get_spiral_progression(self, rate_func: Callable) -> list[tuple]:
@@ -355,6 +364,42 @@ class AnimateGhostsWithPlot(Animation):
         new_mobject = VGroup(av, dp, ghosts, plot)
 
         self.mobject[1].angle_pair = dp._angle_pair
+        self.mobject.become(new_mobject)
+
+
+class MorphPlotWithAddedAxes(AnimateGhostsWithPlot):
+    def __init__(
+            self,
+            main_dp: DoublePendulum,
+            plot: Plotter,
+            new_angle_pair: tuple[float, float],
+            list_of_cs: list[DynamicAxes],
+            run_time: float = 1,
+            rate_func: Callable[[float], float] = smoothstep,
+            **kwargs
+    ):
+        null_dp = main_dp.create_double_pendulum(1, 1)
+        null_av = null_dp.create_angle_visualizer()
+        null_ghosts = DoublePendulumGhosts(main_dp,
+                                           10,  # FR: 200
+                                           max_opac=0.4
+                                           )
+        super().__init__(
+            null_ghosts,
+            plot,
+            new_angle_pair,
+            run_time,
+            rate_func,
+            use_ghosts=False,
+            **kwargs
+        )
+        self.mobject = VGroup(self.plot)
+
+    def interpolate_mobject(self, alpha: float):
+        current_frame = int(alpha * (self.num_of_frames - 1))
+        plot = self.list_of_plots[current_frame]
+
+        new_mobject = VGroup(plot)
         self.mobject.become(new_mobject)
 
 

@@ -8,7 +8,7 @@ else:
     device = None
 fps = 12
 quality = 'low_quality'  # ['fourk_quality', 'high_quality', 'medium_quality']
-MAX_GB = 3.5
+MAX_GB = 4.0
 config.quality = quality
 config.frame_rate = fps
 config.preview = True
@@ -42,8 +42,8 @@ anticipate = rate_functions.ease_in_out_back
 
 
 if quality == 'fourk_quality':
-    rtol = 1e-7 # 1e-9
-    atol = 1e-9 # 1e-11
+    rtol = 1e-6 # 1e-9
+    atol = 1e-8 # 1e-11
     pixel_length = 2000
     # chunk_size = 5500
 elif quality == 'high_quality':
