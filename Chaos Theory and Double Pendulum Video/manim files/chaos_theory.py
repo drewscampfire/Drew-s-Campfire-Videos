@@ -47,22 +47,25 @@ def get_standard_cs(
         font_size_y: float = 20,
         x_line_to_number_buff: float = 0.125,
         y_line_to_number_buff: float = 0.125,
-        tick_length: float = 0.0125
+        tick_length: float = 0.0125,
+        **kwargs
 ):
     return DynamicAxes(
-            x_range=x_range,
-            y_range=y_range,
-            x_length=x_length,
-            y_length=y_length,
-            x_is_in_degrees=True,
-            y_is_in_degrees=True,
-            font_size_x=font_size_x,
-            font_size_y=font_size_y,
-            include_zero_lines=False,
-            use_constant_tick_length=True,
-            x_line_to_number_buff=x_line_to_number_buff,
-            y_line_to_number_buff=y_line_to_number_buff,
-            tick_length=tick_length
+        x_range=x_range,
+        y_range=y_range,
+        x_length=x_length,
+        y_length=y_length,
+        x_is_in_degrees=True,
+        y_is_in_degrees=True,
+        font_size_x=font_size_x,
+        font_size_y=font_size_y,
+        include_zero_lines=False,
+        use_constant_tick_length=True,
+        x_line_to_number_buff=x_line_to_number_buff,
+        y_line_to_number_buff=y_line_to_number_buff,
+        tick_length=tick_length,
+        **kwargs
+
     )
 
 
@@ -2555,17 +2558,24 @@ class Scene6(ComplexScene):
 
     @run
     def flips_early(self):
+        # region CONFIGURATION AND SETUP PARAMETERS
         inset_side_length = 3.65
         vert_shift = 1.99
         hori_shift = 4.25
         font_size_config = {'font_size_x': 13, 'font_size_y': 13,
                             'x_line_to_number_buff': 0.12, 'y_line_to_number_buff': 0.12,
                             'tick_length': 0.01}
-        inset_1_range = [(-45, -20), (-167.5, -142.5)]
+        inset_1_range = [(-42.5, -22.5), (-166.25, -146.25)]
         inset_2_range = [(-33.5, -28.5), (-153, -148)]
-        dp_count_size = 10
-        duration = 16
+        sim_labels = [-180, -90, 0, 90, 180]
+        dp_count_size = 6 # 32
+        duration = 30
+        # endregion
+        
+        # region MAIN VISUALIZATION SETUP
         self.cs = get_standard_cs(x_length=inset_side_length, y_length=inset_side_length,
+                                  labeled_values_for_x_override=sim_labels,
+                                  labeled_values_for_y_override=sim_labels,
                                   **font_size_config).set_z_index(2)
         self.cs_bg_rect = self.cs.get_background_rectangle()
         self.table_title = Tex(
@@ -2577,8 +2587,9 @@ class Scene6(ComplexScene):
         self.pixel_visual = CrispPixelStaticVisuals(self.cs, TCF.torus_smooth_gradient)
         self.axes_group = Group(self.cs, self.table_title, self.pixel_visual)
         self.axes_group.shift(LEFT * hori_shift + DOWN * vert_shift)
+        # endregion
 
-        # getting the insets
+        # region NESTED INSET CREATION (ZOOM VIEWS)
         zoom1 = InsetScaffold(
         self.pixel_visual,
         inset_1_range[0],
@@ -2602,7 +2613,12 @@ class Scene6(ComplexScene):
             include_return_cs=True,
             **font_size_config
         )
+        for i, inset in enumerate([zoom1, zoom2]):
+            for submob in inset.submobjects[1:]:
+                submob.set_z_index(3)
+        # endregion
 
+        # region DOUBLE PENDULUM TABLES CREATION
         itchy_groups = Group()
         for x_range, y_range, location in zip(
             [inset_1_range[0], inset_2_range[0]],
@@ -2617,7 +2633,9 @@ class Scene6(ComplexScene):
             )
             itchy_group = Group(itchy_bg_rect, itchy_cs, itchy_table)
             itchy_groups.add(itchy_group)
+        # endregion
 
+        # region 30-SECOND PLOT SETUP
         thirty_cs = DynamicAxes(
             x_range=(-180, 180),
             y_range=(-180, 180),
@@ -2627,6 +2645,8 @@ class Scene6(ComplexScene):
             y_is_in_degrees=True,
             include_zero_lines=True,
             use_constant_tick_length=True,
+            labeled_values_for_x_override=sim_labels,
+            labeled_values_for_y_override=sim_labels,
             **font_size_config
         ).set_z_index(2)
         thirty_bg_rect = thirty_cs.get_background_rectangle()
@@ -2650,16 +2670,21 @@ class Scene6(ComplexScene):
             plot_title,
             plot
         ).shift(vert_shift * UP + hori_shift * LEFT)
+        # endregion
 
+        # region COORDINATE SYSTEMS LIST FOR MORPHING
         list_of_cs = [self.cs, zoom1.cs_island, zoom2.cs_island,
                  itchy_groups[0][1], itchy_groups[1][1]
                  ]
 
-        for cs in list_of_cs:
-            print(f"center of cs: {cs.c2p((0, 0, 0))}")
-            print(f"location of cs: {cs.location}")
-        # exit()
+        # for cs in list_of_cs:
+        #     cs.set_z_index(2)
+        #     print(f"center of cs: {cs.c2p((0, 0, 0))}")
+        #     print(f"location of cs: {cs.location}")
+        # # exit()
+        # endregion
 
+        # region ADD ALL ELEMENTS TO SCENE
         self.add(
             self.axes_group,
             self.pixel_visual,
@@ -2669,36 +2694,40 @@ class Scene6(ComplexScene):
             thirty_group
         )
         self.wait()
-        self.play(
-            # PixelVisualizationAnimation(
-            #     self.pixel_visual,
-            #     duration,
-            #     "flips_early_main",
-            #     False
-            #     ),
-            # PixelVisualizationAnimation(
-            #     zoom1.inset_image,
-            #     duration,
-            #     "zoom1",
-            #     False
-            # ),
-            # PixelVisualizationAnimation(
-            #     zoom2.inset_image,
-            #     duration,
-            #     "zoom2",
-            #     False
-            # ),
-            # ReleaseTableOfDoublePendulums(itchy_groups[0][-1], duration),
-            # ReleaseTableOfDoublePendulums(itchy_groups[1][-1], duration),
+        # endregion
+        
+        # region COORDINATED ANIMATION PLAYBACK
+        self.play(AnimationGroup(
+            PixelVisualizationAnimation(
+                self.pixel_visual,
+                duration,
+                "flips_early_main",
+                False
+                ),
+            PixelVisualizationAnimation(
+                zoom1.inset_image,
+                duration,
+                "zoom1",
+                False
+            ),
+            PixelVisualizationAnimation(
+                zoom2.inset_image,
+                duration,
+                "zoom2",
+                False
+            ),
+            ReleaseTableOfDoublePendulums(itchy_groups[0][-1], duration),
+            ReleaseTableOfDoublePendulums(itchy_groups[1][-1], duration),
             MorphPlotWithAddedAxes(
                 main_dp,
                 plot,
-                (30, -150),
+                (-31, -150),
                 list_of_cs,
                 run_time=3,
             )
-        )
+        ))
         self.wait()
+        # endregion
 
 
 class Scene7(ComplexScene):
@@ -3004,7 +3033,6 @@ class Scene7(ComplexScene):
         self.add(pixel_visual_group)
         self.wait()
 
-
     @ignore
     def scene7_5_more_gradients_and_insets(self):
         cs = get_standard_cs().set_z_index(2)
@@ -3163,12 +3191,11 @@ class Scene7(ComplexScene):
         #         **params
         #     ))
 
-
     @ignore
     def scene7_8_testing(self):
         cs = get_standard_cs(
-            (161.25, 161.75),
-            (-9.5, -9)
+            (111.25, 111.75),
+            (115.75, 116.25)
         ).set_z_index(2)
         cs_bg_rect = cs.get_background_rectangle()
         table_title = Tex(
@@ -3179,7 +3206,7 @@ class Scene7(ComplexScene):
         ).next_to(cs_bg_rect, UP, buff=0.05)
         color_tracker = ColorTracker(
             self.get_new_rainbow(),
-            50,  # R: 70
+            70,  # R: 70
             10,
             False,
             0.8,
@@ -3193,7 +3220,7 @@ class Scene7(ComplexScene):
         ).turn_to_last_image(color_tracker, use_existing_dat="scene7_8_testing_", skip_processing=False)
 
         self.add(cs, table_title, color_tracker, flip_visual)
-        self.wait()
+        # self.wait()
 
 
 if __name__ == "__main__":
@@ -3225,4 +3252,7 @@ if __name__ == "__main__":
         'white_default',
         'reshape_flips',
         'unreshape_zoom'
+        "flips_early_main",
+        "zoom1",
+        "zoom2"
     )

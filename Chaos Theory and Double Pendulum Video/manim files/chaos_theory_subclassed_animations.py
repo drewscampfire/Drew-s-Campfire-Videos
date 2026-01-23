@@ -398,10 +398,16 @@ class MorphPlotWithAddedAxes(AnimateGhostsWithPlot):
         for plot in tqdm(self.list_of_plots, desc="Processing plots"):
             start_dot_list = []
             start_dot_copy = self.list_of_plots[0].start_dot.copy()
+            x, y, z = plot.passed_points[0]  # Get the first point's coordinates
             for cs in list_of_cs:
-                start_dot = start_dot_copy.copy()
-                start_dot.move_to(cs.c2p(plot.passed_points[0]))
-                start_dot_list.append(start_dot)
+                # Check if point is within the axes bounds
+                if (cs.dyn_x_range[0] <= x <= cs.dyn_x_range[1] and
+                        cs.dyn_y_range[0] <= y <= cs.dyn_y_range[1]):
+                    start_dot = start_dot_copy.copy()
+                    start_dot.move_to(cs.c2p((x, y)))
+                    start_dot_list.append(start_dot)
+                else:
+                    start_dot_list.append(VMobject())
             self.list_of_start_dots.append(start_dot_list)
         self.mobject = VGroup(self.plot, *[self.list_of_start_dots[0]])
 
