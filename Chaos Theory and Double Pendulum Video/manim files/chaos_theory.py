@@ -2558,7 +2558,7 @@ class Scene6(ComplexScene):
 
     @run
     def flips_early(self):
-        # region CONFIGURATION AND SETUP PARAMETERS
+        # region CONFIGURATION AND SETUP
         inset_side_length = 3.65
         vert_shift = 1.99
         hori_shift = 4.25
@@ -2570,9 +2570,7 @@ class Scene6(ComplexScene):
         sim_labels = [-180, -90, 0, 90, 180]
         dp_count_size = 6 # 32
         duration = 30
-        # endregion
-        
-        # region MAIN VISUALIZATION SETUP
+
         self.cs = get_standard_cs(x_length=inset_side_length, y_length=inset_side_length,
                                   labeled_values_for_x_override=sim_labels,
                                   labeled_values_for_y_override=sim_labels,
@@ -2589,36 +2587,7 @@ class Scene6(ComplexScene):
         self.axes_group.shift(LEFT * hori_shift + DOWN * vert_shift)
         # endregion
 
-        # region NESTED INSET CREATION (ZOOM VIEWS)
-        zoom1 = InsetScaffold(
-        self.pixel_visual,
-        inset_1_range[0],
-        inset_1_range[1],
-        inset_side_length,
-        inset_side_length,
-        vert_shift * DOWN,
-        inset_line_dirs=[UL, DL],
-        include_return_cs=True,
-        **font_size_config
-        )
-        zoom2 = InsetScaffold(
-            zoom1.inset_image,
-            inset_2_range[0],
-            inset_2_range[1],
-            inset_side_length,
-            inset_side_length,
-            vert_shift * DOWN + hori_shift * RIGHT,
-            inset_line_dirs=[UL, DL],
-            include_image=True,
-            include_return_cs=True,
-            **font_size_config
-        )
-        for i, inset in enumerate([zoom1, zoom2]):
-            for submob in inset.submobjects[1:]:
-                submob.set_z_index(3)
-        # endregion
-
-        # region DOUBLE PENDULUM TABLES CREATION
+        # region UPPER OBJECTS CREATION (DP TABLES AND 30-SECOND PLOT)
         itchy_groups = Group()
         for x_range, y_range, location in zip(
             [inset_1_range[0], inset_2_range[0]],
@@ -2633,9 +2602,7 @@ class Scene6(ComplexScene):
             )
             itchy_group = Group(itchy_bg_rect, itchy_cs, itchy_table)
             itchy_groups.add(itchy_group)
-        # endregion
 
-        # region 30-SECOND PLOT SETUP
         thirty_cs = DynamicAxes(
             x_range=(-180, 180),
             y_range=(-180, 180),
@@ -2672,31 +2639,75 @@ class Scene6(ComplexScene):
         ).shift(vert_shift * UP + hori_shift * LEFT)
         # endregion
 
-        # region COORDINATE SYSTEMS LIST FOR MORPHING
-        list_of_cs = [self.cs, zoom1.cs_island, zoom2.cs_island,
-                 itchy_groups[0][1], itchy_groups[1][1]
-                 ]
-
-        # for cs in list_of_cs:
-        #     cs.set_z_index(2)
-        #     print(f"center of cs: {cs.c2p((0, 0, 0))}")
-        #     print(f"location of cs: {cs.location}")
-        # # exit()
+        # region NESTED INSET CREATION (ZOOM VIEWS)
+        scaffold1_down = InsetScaffold(
+            self.pixel_visual,
+            inset_1_range[0],
+            inset_1_range[1],
+            inset_side_length,
+            inset_side_length,
+            vert_shift * DOWN,
+            inset_line_dirs=[UL, DL],
+            include_return_cs=True,
+            **font_size_config
+        )
+        scaffold2_down = InsetScaffold(
+            scaffold1_down.inset_image,
+            inset_2_range[0],
+            inset_2_range[1],
+            inset_side_length,
+            inset_side_length,
+            vert_shift * DOWN + hori_shift * RIGHT,
+            inset_line_dirs=[UL, DL],
+            include_image=True,
+            include_return_cs=True,
+            **font_size_config
+        )
+        scaffold1_up = InsetScaffold(
+            thirty_cs,
+            inset_1_range[0],
+            inset_1_range[1],
+            inset_side_length,
+            inset_side_length,
+            vert_shift * UP,
+            inset_line_dirs=[UL, DL],
+            include_image=False,
+            include_return_cs=True,
+            **font_size_config
+        )
+        scaffold2_up = InsetScaffold(
+            scaffold1_up.cs_island,
+            inset_2_range[0],
+            inset_2_range[1],
+            inset_side_length,
+            inset_side_length,
+            vert_shift * UP + hori_shift * RIGHT,
+            inset_line_dirs=[UL, DL],
+            include_image=False,
+            include_return_cs=True,
+            **font_size_config
+        )
+        for i, inset in enumerate([scaffold1_down, scaffold2_down, scaffold1_up, scaffold2_up]):
+            for submob in inset.submobjects[1:]:
+                submob.set_z_index(3)
         # endregion
 
-        # region ADD ALL ELEMENTS TO SCENE
+        # region ADDING AND PLAYING TO SCENE
+        list_of_cs = [self.cs, scaffold1_down.cs_island, scaffold2_down.cs_island,
+                      itchy_groups[0][1], itchy_groups[1][1]
+                      ]
         self.add(
             self.axes_group,
             self.pixel_visual,
-            zoom1,
+            scaffold1_down,
+            scaffold2_down,
+            scaffold1_up,
+            scaffold2_up,
             itchy_groups,
-            zoom2,
-            thirty_group
+            thirty_group,
         )
         self.wait()
-        # endregion
-        
-        # region COORDINATED ANIMATION PLAYBACK
+
         self.play(AnimationGroup(
             PixelVisualizationAnimation(
                 self.pixel_visual,
@@ -2705,13 +2716,13 @@ class Scene6(ComplexScene):
                 False
                 ),
             PixelVisualizationAnimation(
-                zoom1.inset_image,
+                scaffold1_down.inset_image,
                 duration,
                 "zoom1",
                 False
             ),
             PixelVisualizationAnimation(
-                zoom2.inset_image,
+                scaffold2_down.inset_image,
                 duration,
                 "zoom2",
                 False
@@ -3194,8 +3205,8 @@ class Scene7(ComplexScene):
     @ignore
     def scene7_8_testing(self):
         cs = get_standard_cs(
-            (111.25, 111.75),
-            (115.75, 116.25)
+            (74, 114),
+            (107.5, 147.5)
         ).set_z_index(2)
         cs_bg_rect = cs.get_background_rectangle()
         table_title = Tex(
@@ -3205,8 +3216,8 @@ class Scene7(ComplexScene):
             tex_template=get_font_for_tex("Montserrat Medium")
         ).next_to(cs_bg_rect, UP, buff=0.05)
         color_tracker = ColorTracker(
-            self.get_new_rainbow(),
-            70,  # R: 70
+            [RED] + [RED] + self.get_new_rainbow(),
+            50,  # R: 70
             10,
             False,
             0.8,
@@ -3219,7 +3230,8 @@ class Scene7(ComplexScene):
             cs
         ).turn_to_last_image(color_tracker, use_existing_dat="scene7_8_testing_", skip_processing=False)
 
-        self.add(cs, table_title, color_tracker, flip_visual)
+        # self.add(cs, table_title, color_tracker, flip_visual)
+        self.add(flip_visual)
         # self.wait()
 
 

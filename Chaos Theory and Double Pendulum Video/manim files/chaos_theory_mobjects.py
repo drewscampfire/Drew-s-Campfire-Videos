@@ -3,6 +3,7 @@ from __future__ import annotations
 from manim.mobject.opengl.opengl_compatibility import ConvertToOpenGL
 
 from manim_config import *
+from color_utils_chaos_theory import TorchColorFuncs as TCF
 from chaos_theory_base_classes import *
 from color_utils_chaos_theory import *
 from mydebugger import timer, delete_memmap_files
@@ -1419,7 +1420,7 @@ class PixelInset(Group):
 class InsetScaffold(Group):
     def __init__(
             self,
-            visuals: PixelStaticVisuals | FlipStaticVisuals,
+            visuals: PixelStaticVisuals | FlipStaticVisuals | DynamicAxes,
             x_range: Tuple[float, float],
             y_range: Tuple[float, float],
             x_length: float,
@@ -1440,8 +1441,14 @@ class InsetScaffold(Group):
     ):
         super().__init__(**kwargs)
 
-        self.visuals = visuals
-        self.main_axes = visuals.cs
+        if isinstance(visuals, (PixelStaticVisuals, FlipStaticVisuals)):
+            self.visuals = visuals
+            self.main_axes = visuals.cs
+        elif isinstance(visuals, DynamicAxes):
+            self.visuals = CrispPixelStaticVisuals(visuals, TCF.torus_smooth_gradient)
+            self.main_axes = visuals
+        else:
+            raise ValueError("visuals must be a PixelStaticVisuals, FlipStaticVisuals, or DynamicAxes")
         assert self.main_axes.dyn_x_range[0] <= x_range[0] < x_range[1] <= self.main_axes.dyn_x_range[1], (
             "x_range must be within the dynamic x_range")
         assert self.main_axes.dyn_y_range[0] <= y_range[0] < y_range[1] <= self.main_axes.dyn_y_range[1], (
