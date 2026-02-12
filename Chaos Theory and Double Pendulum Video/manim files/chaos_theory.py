@@ -2559,6 +2559,7 @@ class Scene6(ComplexScene):
     @run
     def flips_early(self):
         # region CONFIGURATION AND SETUP
+        self.get_scene6_ending_setup()
         inset_side_length = 3.65
         vert_shift = 1.99
         hori_shift = 4.25
@@ -2570,6 +2571,17 @@ class Scene6(ComplexScene):
         sim_labels = [-180, -90, 0, 90, 180]
         dp_count_size = 6 # 32
         duration = 30
+
+        large_cs = get_standard_cs(labeled_values_for_x_override=sim_labels,
+                                   labeled_values_for_y_override=sim_labels,).set_z_index(2)
+        large_bg_rect = large_cs.get_background_rectangle().set_z_index(1)
+        large_table_title = Tex(
+            "ALL POSSIBLE ", "INITIAL ", "POSITIONS",
+            fill_color=AMBER_ORANGE,
+            font_size=20,
+            tex_template=get_font_for_tex("Montserrat Medium")
+        ).next_to(self.cs_bg_rect, UP, buff=0.05).set_z_index(2)
+        large_pixel_visual = CrispPixelStaticVisuals(self.cs, TCF.torus_smooth_gradient)
 
         self.cs = get_standard_cs(x_length=inset_side_length, y_length=inset_side_length,
                                   labeled_values_for_x_override=sim_labels,
@@ -2583,7 +2595,7 @@ class Scene6(ComplexScene):
             tex_template=get_font_for_tex("Montserrat Medium")
         ).next_to(self.cs_bg_rect, UP, buff=0.03)
         self.pixel_visual = CrispPixelStaticVisuals(self.cs, TCF.torus_smooth_gradient)
-        self.axes_group = Group(self.cs, self.table_title, self.pixel_visual)
+        self.axes_group = Group(self.cs_bg_rect, self.cs, self.table_title, self.pixel_visual)
         self.axes_group.shift(LEFT * hori_shift + DOWN * vert_shift)
         # endregion
 
@@ -2687,27 +2699,41 @@ class Scene6(ComplexScene):
             include_return_cs=True,
             **font_size_config
         )
-        for i, inset in enumerate([scaffold1_down, scaffold2_down, scaffold1_up, scaffold2_up]):
-            for submob in inset.submobjects[1:]:
+        scaffolds = [scaffold1_down, scaffold2_down, scaffold1_up, scaffold2_up]
+        for i, scaffold in enumerate(scaffolds):
+            for submob in scaffold.submobjects[1:]:
                 submob.set_z_index(3)
         # endregion
 
         # region ADDING AND PLAYING TO SCENE
-        list_of_cs = [self.cs, scaffold1_down.cs_island, scaffold2_down.cs_island,
-                      itchy_groups[0][1], itchy_groups[1][1]
-                      ]
-        self.add(
-            self.axes_group,
-            self.pixel_visual,
-            scaffold1_down,
-            scaffold2_down,
-            scaffold1_up,
-            scaffold2_up,
-            itchy_groups,
-            thirty_group,
-        )
+        self.play(Create(large_cs, shift=2*UP, scale=0.5))
+        self.play(FadeIn(large_table_title, shift=3*UP, scale=2))
+        self.play(FadeIn(large_pixel_visual, shift=LEFT * 6))
+        self.play(AnimationGroup(
+            ReplacementTransform(large_cs, self.cs),
+            ReplacementTransform(large_table_title, self.table_title),
+            ReplacementTransform(large_bg_rect, self.cs_bg_rect),
+            FadeReplacementTransform(large_pixel_visual, self.pixel_visual),
+        ))
+        for scaffold in scaffolds[:2]:
+            self.play(Create(scaffold))
+        for itchy_group, scaffold_up, scaffold_down in zip(
+                itchy_groups,
+                [scaffold1_up, scaffold2_up],
+                [scaffold1_down, scaffold2_down]):
+            self.play(ReplacementTransform(
+                VGroup(scaffold_down.cs_island.copy(), scaffold_down.cs_island.get_background_rectangle()),
+                VGroup(scaffold_up.cs_island.copy(), scaffold_up.cs_island.get_background_rectangle()),
+                path_arc=-PI/12))
+            self.play(FadeReplacementTransform(scaffold_down.inset_image.copy(), itchy_group[-1]))
+        self.play(AnimationGroup(
+            ReplacementTransform(self.cs_bg_rect.copy(),thirty_bg_rect, path_arc=-PI/12),
+            FadeReplacementTransform(self.cs.copy(), thirty_cs, path_arc=-PI/12)
+        ))
+        self.play(FadeIn(plot_title, shift=2*UP, scale=2))
+        self.play(FadeIn(plot, scale=2))
         self.wait()
-
+        """
         self.play(AnimationGroup(
             PixelVisualizationAnimation(
                 self.pixel_visual,
@@ -2734,10 +2760,11 @@ class Scene6(ComplexScene):
                 plot,
                 (-31, -150),
                 list_of_cs,
-                run_time=3,
+                run_time=4,
             )
         ))
         self.wait()
+        """
         # endregion
 
 

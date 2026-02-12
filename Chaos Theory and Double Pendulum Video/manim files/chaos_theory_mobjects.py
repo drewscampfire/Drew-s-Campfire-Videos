@@ -1538,7 +1538,11 @@ class InsetScaffold(Group):
         anims.append(Create(self.pixel_visuals_rect, run_time=0.75))
 
         if hasattr(self, 'cs_island') and self.cs_island in self.submobjects:
-            anims.append(Create(self.cs_island, run_time=0.5))
+            # FIX: Instantiate first, then set run_time to avoid passing 'run_time'
+            # as a kwarg to DynamicAxes._create_override which causes the TypeError
+            cs_anim = Create(self.cs_island)
+            cs_anim.run_time = 0.5
+            anims.append(cs_anim)
 
         if self.inset_image in self.submobjects:
             anims.append(FadeIn(self.inset_image, run_time=0.5))
