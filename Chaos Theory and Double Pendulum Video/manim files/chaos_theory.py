@@ -2569,7 +2569,7 @@ class Scene6(ComplexScene):
         inset_1_range = [(-42.5, -22.5), (-166.25, -146.25)]
         inset_2_range = [(-33.5, -28.5), (-153, -148)]
         sim_labels = [-180, -90, 0, 90, 180]
-        dp_count_size = 6 # 32
+        dp_count_size = 8 # 32
         duration = 30
 
         large_cs = get_standard_cs(labeled_values_for_x_override=sim_labels,
@@ -2706,34 +2706,46 @@ class Scene6(ComplexScene):
         # endregion
 
         # region ADDING AND PLAYING TO SCENE
-        self.play(Create(large_cs, shift=2*UP, scale=0.5))
-        self.play(FadeIn(large_table_title, shift=3*UP, scale=2))
-        self.play(FadeIn(large_pixel_visual, shift=LEFT * 6))
+        list_of_cs = [self.cs, scaffold1_down.cs_island, scaffold2_down.cs_island,
+                      itchy_groups[0][1], itchy_groups[1][1]
+                      ]
+        self.play(Create(large_cs, shift=2*UP, scale=0.5, run_time=1.5))
+        self.play(FadeIn(large_pixel_visual, shift=LEFT * 6), run_time=1.5)
+        self.play(FadeIn(large_table_title, shift=3*UP, scale=2, run_time=1.5))
         self.play(AnimationGroup(
             ReplacementTransform(large_cs, self.cs),
             ReplacementTransform(large_table_title, self.table_title),
             ReplacementTransform(large_bg_rect, self.cs_bg_rect),
             FadeReplacementTransform(large_pixel_visual, self.pixel_visual),
-        ))
+        ), run_time=1.5)
         for scaffold in scaffolds[:2]:
             self.play(Create(scaffold))
+        copy_duration = 3
+        # bringing copies of the axes to the top along with the equivalent table of double pendulums
         for itchy_group, scaffold_up, scaffold_down in zip(
                 itchy_groups,
                 [scaffold1_up, scaffold2_up],
                 [scaffold1_down, scaffold2_down]):
-            self.play(ReplacementTransform(
-                VGroup(scaffold_down.cs_island.copy(), scaffold_down.cs_island.get_background_rectangle()),
-                VGroup(scaffold_up.cs_island.copy(), scaffold_up.cs_island.get_background_rectangle()),
-                path_arc=-PI/12))
-            self.play(FadeReplacementTransform(scaffold_down.inset_image.copy(), itchy_group[-1]))
+            self.play(AnimationGroup(
+                FadeReplacementTransform(
+                    scaffold_down.cs_island.copy(), scaffold_up.cs_island.copy(), path_arc=-PI/12),
+                FadeReplacementTransform(
+                    scaffold_down.cs_island.get_background_rectangle(),
+                    scaffold_up.cs_island.get_background_rectangle(), path_arc=-PI/12),
+                FadeReplacementTransform(scaffold_down.inset_image.copy(), itchy_group[-1], path_arc=-PI/12),
+                run_time=copy_duration
+            ))
         self.play(AnimationGroup(
             ReplacementTransform(self.cs_bg_rect.copy(),thirty_bg_rect, path_arc=-PI/12),
             FadeReplacementTransform(self.cs.copy(), thirty_cs, path_arc=-PI/12)
+        ), run_time=copy_duration)
+        self.play(AnimationGroup(
+            FocusOn(thirty_cs.bg_rectangle.get_center()),
+            FadeIn(plot, scale=2),
+            lag_ratio=0.75
         ))
-        self.play(FadeIn(plot_title, shift=2*UP, scale=2))
-        self.play(FadeIn(plot, scale=2))
+        self.play(FadeIn(plot_title, shift=2*UP, scale=3, run_time=1.5))
         self.wait()
-        """
         self.play(AnimationGroup(
             PixelVisualizationAnimation(
                 self.pixel_visual,
@@ -2764,7 +2776,6 @@ class Scene6(ComplexScene):
             )
         ))
         self.wait()
-        """
         # endregion
 
 

@@ -718,11 +718,11 @@ class DynamicAxes(VGroup, CoordinateSystem):
 
     @override_animation(Create)
     def _create_override(self, shift: np.ndarray = ORIGIN, scale: float = 1.0, y_axis_first: bool = False,
-                         slow_factor: float = 1.0):
+                         slow_factor: float = 1.0, run_time: float = 1):
         anims = []
         if self.bg_rectangle:
             anims.append(FadeIn(self.bg_rectangle, shift=shift, scale=scale,
-                                rate_func=anticipate, run_time=1
+                                rate_func=anticipate, run_time=run_time
                                 ))
 
         x_kwargs = {"shift": UP * 0.2, "scale": 0.9, "run_time": 0.5}
@@ -1153,10 +1153,7 @@ class FadeReplacementTransform(Animation):
         faded_copy.move_to(dest_mob)
         faded_copy.stretch_to_fit_width(dest_mob.width)
         faded_copy.stretch_to_fit_height(dest_mob.height)
-        if isinstance(faded_copy, Group):
-            [m.set_opacity(0) for m in faded_copy.submobjects]
-        elif isinstance(faded_copy, VMobject):
-            faded_copy.set_opacity(0)
+        faded_copy.set_opacity(0)
 
         return faded_copy
 
