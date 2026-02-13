@@ -2721,7 +2721,7 @@ class Scene6(ComplexScene):
             # self.play(FadeIn(scaffold, shift=RIGHT*2, scale=0.5, run_time=1))
             self.play(Create(scaffold))
         self.wait()
-        copy_duration = 3
+        copy_duration = 2
         # bringing copies of the axes to the top along with the equivalent table of double pendulums
         for itchy_group, scaffold_up, scaffold_down in zip(
                 itchy_groups,
@@ -2764,23 +2764,27 @@ class Scene6(ComplexScene):
                 ReleaseTableOfDoublePendulums(itchy_groups[0][-1], duration),
                 ReleaseTableOfDoublePendulums(itchy_groups[1][-1], duration),
             ],
-            13: AnimationGroup(
+            15: AnimationGroup(
                 ReplacementTransform(self.cs_bg_rect.copy(),thirty_bg_rect, path_arc=-PI/10),
                 FadeReplacementTransform(self.cs.copy(), thirty_cs, path_arc=-PI/10),
-                run_time=3),
-            16: FadeIn(plot_title, shift=2*UP, scale=3, run_time=1.5),
-            17.5: lambda: AnimationGroup(
-                FocusOn(thirty_cs.bg_rectangle.get_center()),
-                FadeIn(plot, scale=2),
-                lag_ratio=0.75
-            ),
-            23: lambda: MorphPlotWithAddedAxes(
+                run_time=copy_duration),
+            17: FadeIn(plot_title, shift=2*UP, scale=3, run_time=1.5),
+            18: FocusOn(thirty_cs.bg_rectangle.get_center()),
+            19.5: FadeIn(plot, scale=2),
+            20.5: lambda: MorphPlotWithAddedAxes(
                     main_dp,
                     plot,
                     (-31, -150),
                     list_of_cs,
                     run_time=4,
-                )
+                ),
+            25: lambda: MorphPlotWithAddedAxes(
+                    main_dp,
+                    plot,
+                    (-33, -163),
+                    list_of_cs,
+                    run_time=4,
+                ),
         }
         play_timeline(self, timeline)
         self.wait()

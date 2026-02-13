@@ -33,7 +33,8 @@ def play_timeline(scene, timeline):
 
     This function allows scheduling animations to start at specific times, with support
     for parallel animations. It handles animation instantiation at the correct time to
-    avoid issues with multiple animations acting on the same mobject.
+    avoid issues with multiple animations acting on the same mobject. Introducers inside AnimationGroups will not
+    work properly.
 
     Args:
         scene (Scene): The Manim scene to play the animations on.
@@ -122,6 +123,7 @@ def play_timeline(scene, timeline):
             else:
                 anim = item  # Use pre-instantiated animation
 
+            anim._setup_scene(scene)
             turn_animation_into_updater(anim)
             scene.add(anim.mobject)
             ending_time = max(ending_time, t + anim.run_time)
