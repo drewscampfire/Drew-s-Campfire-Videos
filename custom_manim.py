@@ -33,8 +33,8 @@ def play_timeline(scene, timeline):
 
     This function allows scheduling animations to start at specific times, with support
     for parallel animations. It handles animation instantiation at the correct time to
-    avoid issues with multiple animations acting on the same mobject. Introducers inside AnimationGroups will not
-    work properly.
+    avoid issues with multiple animations acting on the same mobject. Introducers inside
+    AnimationGroups will not work properly.
 
     Args:
         scene (Scene): The Manim scene to play the animations on.
@@ -50,6 +50,8 @@ def play_timeline(scene, timeline):
         - Animations can have different durations and run in parallel
         - When a timeline value is an iterable, all items start simultaneously
         - The function waits for all animations to complete before returning
+        - Each animation's finish() and clean_up_from_scene() methods are called when
+          it completes to ensure proper state finalization and cleanup
 
     Examples:
         Using callables (recommended for avoiding some mobject state conflicts):
@@ -66,58 +68,59 @@ def play_timeline(scene, timeline):
         play_timeline(self, timeline)
 ```
 
-        Direct animation instances:
+        Sequential transformations on same mobject:
 ```python
         timeline = {
-            0: Create(static_obj, run_time=5),
-            2: FadeIn(another_obj, run_time=2),
-            5: [
-                Rotate(obj1, PI/2, run_time=3),
-                FadeOut(obj2, run_time=1)
-            ]
+            0: lambda: MorphPlotWithAddedAxes(dp, plot, (-31, -150), cs_list, run_time=4),
+            4: lambda: MorphPlotWithAddedAxes(dp, plot, (-33, -163), cs_list, run_time=4),
         }
         play_timeline(self, timeline)
-```
-
-        Mixed usage:
-```python
-        timeline = {
-            0: Create(static_bar, run_time=10),
-            2: lambda: Transform(square, circle.copy(), run_time=3),  # Uses current state
-            5: [
-                FadeIn(text1, run_time=1),
-                lambda: Write(text2.next_to(square, UP), run_time=2)  # Depends on square position
-            ]
-        }
-        play_timeline(self, timeline)
+        # The first animation finishes and cleans up at t=4, ensuring plot state is updated
+        # before the second animation starts
 ```
 
     Notes:
         - All animations are converted to updaters and added to the scene
         - The scene waits appropriately between scheduled events
         - Times are measured from the start of play_timeline execution
+        - Animations that complete between timeline events have finish() and
+          clean_up_from_scene() called automatically
+        - This ensures mobject state is properly finalized and removers are handled
 
     Returns:
         None
     """
     previous_t = 0
     ending_time = 0
+    active_animations = []  # List of (animation, end_time) tuples
 
-    for t, anim_factories in sorted(timeline.items()):
+    for t, items in sorted(timeline.items()):
         # Wait until this event's scheduled time
         to_wait = t - previous_t
         if to_wait > 0:
             scene.wait(to_wait)
+
+            # Finish and clean up any animations that completed during the wait
+            finished_animations = []
+            for anim, end_time in active_animations:
+                if t >= end_time:
+                    anim.finish()
+                    anim.clean_up_from_scene(scene)
+                    finished_animations.append((anim, end_time))
+
+            # Remove finished animations from active list
+            for finished in finished_animations:
+                active_animations.remove(finished)
+
         previous_t = t
 
         # Normalize to a list
-        if callable(anim_factories) or hasattr(anim_factories, 'mobject'):
-            anim_factories = [anim_factories]
+        if callable(items) or hasattr(items, 'mobject'):
+            items = [items]
 
         # Process each animation or factory
-        for item in anim_factories:
-            # Check if it's a factory (callable without mobject attribute)
-            # or already an animation instance (has mobject attribute)
+        for item in items:
+            # If it's a factory, instantiate the animation
             if callable(item) and not hasattr(item, 'mobject'):
                 anim = item()  # Instantiate animation from factory
             else:
@@ -126,11 +129,20 @@ def play_timeline(scene, timeline):
             anim._setup_scene(scene)
             turn_animation_into_updater(anim)
             scene.add(anim.mobject)
-            ending_time = max(ending_time, t + anim.run_time)
 
-    # Wait for all animations to finish
+            # Track this animation with its end time
+            anim_end_time = t + anim.run_time
+            ending_time = max(ending_time, anim_end_time)
+            active_animations.append((anim, anim_end_time))
+
+    # Wait for all remaining animations to finish
     if ending_time > previous_t:
         scene.wait(ending_time - previous_t)
+
+        # Finish and clean up all remaining animations
+        for anim, end_time in active_animations:
+            anim.finish()
+            anim.clean_up_from_scene(scene)
 
 
 class ComplexScene(Scene):
