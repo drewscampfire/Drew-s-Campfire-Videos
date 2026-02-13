@@ -1537,11 +1537,12 @@ class InsetScaffold(Group):
         anims.append(AnimationGroup(*inset_line_anims))
         anims.append(Create(self.pixel_visuals_rect, run_time=0.75))
 
+        if self.inset_image in self.submobjects:
+            anims.append(FadeIn(self.inset_image, run_time=1))
         if hasattr(self, 'cs_island') and self.cs_island in self.submobjects:
             anims.append(Create(self.cs_island))
 
-        if self.inset_image in self.submobjects:
-            anims.append(FadeIn(self.inset_image, run_time=1))
+
 
         return AnimationGroup(*anims, lag_ratio=0.9)
 

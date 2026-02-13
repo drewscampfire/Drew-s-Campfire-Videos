@@ -2732,38 +2732,40 @@ class Scene6(ComplexScene):
                 FadeReplacementTransform(
                     scaffold_down.cs_island.get_background_rectangle(),
                     scaffold_up.cs_island.get_background_rectangle(), path_arc=-PI/12),
-                FadeReplacementTransform(scaffold_down.inset_image.copy(), itchy_group[-1], path_arc=-PI/12),
+                FadeIn(itchy_group[-1], shift=2*UP*vert_shift, path_arc=-PI/12),
+                FadeOut(scaffold_down.inset_image.copy(), shift=2*UP*vert_shift, path_arc=-PI/12),
                 run_time=copy_duration
             ))
         self.play(AnimationGroup(
             ReplacementTransform(self.cs_bg_rect.copy(),thirty_bg_rect, path_arc=-PI/12),
             FadeReplacementTransform(self.cs.copy(), thirty_cs, path_arc=-PI/12)
         ), run_time=copy_duration)
-        self.play(AnimationGroup(
-            FocusOn(thirty_cs.bg_rectangle.get_center()),
-            FadeIn(plot, scale=2),
-            lag_ratio=0.75
-        ))
+        # self.play(AnimationGroup(
+        #     FocusOn(thirty_cs.bg_rectangle.get_center()),
+        #     FadeIn(plot, scale=2),
+        #     lag_ratio=0.75
+        # ))
         self.play(FadeIn(plot_title, shift=2*UP, scale=3, run_time=1.5))
         self.wait()
+        skip_processing: bool = True
         self.play(AnimationGroup(
             PixelVisualizationAnimation(
                 self.pixel_visual,
                 duration,
                 "flips_early_main",
-                False
+                skip_processing
                 ),
             PixelVisualizationAnimation(
                 scaffold1_down.inset_image,
                 duration,
                 "zoom1",
-                False
+                skip_processing
             ),
             PixelVisualizationAnimation(
                 scaffold2_down.inset_image,
                 duration,
                 "zoom2",
-                False
+                skip_processing
             ),
             ReleaseTableOfDoublePendulums(itchy_groups[0][-1], duration),
             ReleaseTableOfDoublePendulums(itchy_groups[1][-1], duration),
