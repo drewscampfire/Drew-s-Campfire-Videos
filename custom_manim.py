@@ -29,51 +29,106 @@ LOWER_LEFT_CORNER = np.array((-config.frame_width / 2, -config.frame_height / 2,
 
 def play_timeline(scene, timeline):
     """
-    Plays a timeline of animations on a given scene.
+    Plays a timeline of animations on a given scene with precise timing control.
+
+    This function allows scheduling animations to start at specific times, with support
+    for parallel animations. It handles animation instantiation at the correct time to
+    avoid issues with multiple animations acting on the same mobject.
 
     Args:
-        scene (Scene): The scene to play the animations on.
-        timeline (dict): R dictionary where the keys are the times at which the animations should start,
-            and the values are the animations to play at that time. The values can be a single animation
-            or an iterable of animations.
+        scene (Scene): The Manim scene to play the animations on.
+        timeline (dict): A dictionary mapping start times (float/int) to animations.
+            Keys: Time in seconds when animation(s) should start.
+            Values: Can be one of the following:
+                - A single animation instance (backward compatible)
+                - A single callable (lambda/function) that returns an animation (recommended)
+                - An iterable of animation instances
+                - An iterable of callables that return animations
 
-    Notes:
-        Each animation in the timeline can have a different duration, so several animations can be
-        running in parallel. If the value for a given time is an iterable, all the animations
-        in the iterable are started at once (although they can end at different times depending
-        on their run_time)
-        The method returns when all animations have finished playing.
+    Behavior:
+        - Animations can have different durations and run in parallel
+        - When a timeline value is an iterable, all items start simultaneously
+        - The function waits for all animations to complete before returning
 
-    Example:
+    Examples:
+        Using callables (recommended for avoiding some mobject state conflicts):
+```python
         timeline = {
-            0: Create(progress_bar, run_time=12, rate_func=linear),
-            1: Create(sq, run_time=10),
+            0: lambda: Create(progress_bar, run_time=12, rate_func=linear),
+            1: lambda: FadeIn(square, run_time=2),
             2: [
-                Create(c, run_time=4),
-                Create(tri, run_time=2)
+                lambda: Create(circle, run_time=4),
+                lambda: Write(triangle, run_time=2)
             ],
-            9: Write(txt.next_to(progress_bar, UP, buff=1), run_time=3)
+            9: lambda: Write(text.next_to(progress_bar, UP, buff=1), run_time=3)
         }
         play_timeline(self, timeline)
+```
+
+        Direct animation instances:
+```python
+        timeline = {
+            0: Create(static_obj, run_time=5),
+            2: FadeIn(another_obj, run_time=2),
+            5: [
+                Rotate(obj1, PI/2, run_time=3),
+                FadeOut(obj2, run_time=1)
+            ]
+        }
+        play_timeline(self, timeline)
+```
+
+        Mixed usage:
+```python
+        timeline = {
+            0: Create(static_bar, run_time=10),
+            2: lambda: Transform(square, circle.copy(), run_time=3),  # Uses current state
+            5: [
+                FadeIn(text1, run_time=1),
+                lambda: Write(text2.next_to(square, UP), run_time=2)  # Depends on square position
+            ]
+        }
+        play_timeline(self, timeline)
+```
+
+    Notes:
+        - All animations are converted to updaters and added to the scene
+        - The scene waits appropriately between scheduled events
+        - Times are measured from the start of play_timeline execution
 
     Returns:
         None
     """
     previous_t = 0
     ending_time = 0
-    for t, anims in sorted(timeline.items()):
+
+    for t, anim_factories in sorted(timeline.items()):
+        # Wait until this event's scheduled time
         to_wait = t - previous_t
         if to_wait > 0:
             scene.wait(to_wait)
         previous_t = t
-        if not isinstance(anims, Iterable):
-            anims = [anims]
-        for anim in anims:
+
+        # Normalize to a list
+        if callable(anim_factories) or hasattr(anim_factories, 'mobject'):
+            anim_factories = [anim_factories]
+
+        # Process each animation or factory
+        for item in anim_factories:
+            # Check if it's a factory (callable without mobject attribute)
+            # or already an animation instance (has mobject attribute)
+            if callable(item) and not hasattr(item, 'mobject'):
+                anim = item()  # Instantiate animation from factory
+            else:
+                anim = item  # Use pre-instantiated animation
+
             turn_animation_into_updater(anim)
             scene.add(anim.mobject)
             ending_time = max(ending_time, t + anim.run_time)
-    if ending_time > t:
-        scene.wait(ending_time - t)
+
+    # Wait for all animations to finish
+    if ending_time > previous_t:
+        scene.wait(ending_time - previous_t)
 
 
 class ComplexScene(Scene):

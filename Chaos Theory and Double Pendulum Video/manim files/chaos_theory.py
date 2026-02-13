@@ -2569,8 +2569,9 @@ class Scene6(ComplexScene):
         inset_1_range = [(-42.5, -22.5), (-166.25, -146.25)]
         inset_2_range = [(-33.5, -28.5), (-153, -148)]
         sim_labels = [-180, -90, 0, 90, 180]
-        dp_count_size = 8 # 32
+        dp_count_size = 6 # 32
         duration = 30
+        plot_duration = 20
 
         large_cs = get_standard_cs(labeled_values_for_x_override=sim_labels,
                                    labeled_values_for_y_override=sim_labels,).set_z_index(2)
@@ -2627,28 +2628,22 @@ class Scene6(ComplexScene):
             labeled_values_for_x_override=sim_labels,
             labeled_values_for_y_override=sim_labels,
             **font_size_config
-        ).set_z_index(2)
+        ).set_z_index(2).shift(UP * vert_shift + LEFT * hori_shift)
         thirty_bg_rect = thirty_cs.get_background_rectangle()
         plot_title = Text(
-            "30-SECOND PLOT",
+            f"{plot_duration}-SECOND PLOT",
             fill_color=AMBER_ORANGE,
             font="Montserrat",
             weight=MEDIUM
         ).scale(0.18).next_to(thirty_bg_rect, UP, buff=0.03)
         main_dp = DoublePendulum((0, 0))
         points = main_dp.get_data_factory(
-            30  # FR: 30
+            plot_duration  # FR: 30
         ).get_points_for_plotting_two_angles()
         plot = Plotter(points, thirty_cs, True, 1,
                        col=[AMBER_ORANGE],
                        stroke_opa=0.35).set_z_index(1)
         plot.revert_tracer()
-        thirty_group = Group(
-            thirty_bg_rect,
-            thirty_cs,
-            plot_title,
-            plot
-        ).shift(vert_shift * UP + hori_shift * LEFT)
         # endregion
 
         # region NESTED INSET CREATION (ZOOM VIEWS)
@@ -2709,9 +2704,13 @@ class Scene6(ComplexScene):
         list_of_cs = [self.cs, scaffold1_down.cs_island, scaffold2_down.cs_island,
                       itchy_groups[0][1], itchy_groups[1][1]
                       ]
-        self.play(Create(large_cs, shift=2*UP, scale=0.5, run_time=1.5))
-        self.play(FadeIn(large_pixel_visual, shift=LEFT * 6), run_time=1.5)
-        self.play(FadeIn(large_table_title, shift=3*UP, scale=2, run_time=1.5))
+        self.add_sound("Echoes of Tomorrow.mp3")
+        self.play(AnimationGroup(
+            Create(large_cs, shift=2 * UP, scale=0.8, run_time=1),
+            FadeIn(large_pixel_visual, shift=LEFT * 6, run_time=1.5),
+            FadeIn(large_table_title, shift=3 * UP, scale=2, run_time=1.5),
+            lag_ratio=0.8
+        ))
         self.play(AnimationGroup(
             ReplacementTransform(large_cs, self.cs),
             ReplacementTransform(large_table_title, self.table_title),
@@ -2719,7 +2718,9 @@ class Scene6(ComplexScene):
             FadeReplacementTransform(large_pixel_visual, self.pixel_visual),
         ), run_time=1.5)
         for scaffold in scaffolds[:2]:
+            # self.play(FadeIn(scaffold, shift=RIGHT*2, scale=0.5, run_time=1))
             self.play(Create(scaffold))
+        self.wait()
         copy_duration = 3
         # bringing copies of the axes to the top along with the equivalent table of double pendulums
         for itchy_group, scaffold_up, scaffold_down in zip(
@@ -2728,55 +2729,60 @@ class Scene6(ComplexScene):
                 [scaffold1_down, scaffold2_down]):
             self.play(AnimationGroup(
                 FadeReplacementTransform(
-                    scaffold_down.cs_island.copy(), scaffold_up.cs_island.copy(), path_arc=-PI/12),
+                    scaffold_down.cs_island.copy(), scaffold_up.cs_island.copy(), path_arc=-PI/10),
                 FadeReplacementTransform(
                     scaffold_down.cs_island.get_background_rectangle(),
-                    scaffold_up.cs_island.get_background_rectangle(), path_arc=-PI/12),
-                FadeIn(itchy_group[-1], shift=2*UP*vert_shift, path_arc=-PI/12),
-                FadeOut(scaffold_down.inset_image.copy(), shift=2*UP*vert_shift, path_arc=-PI/12),
+                    scaffold_up.cs_island.get_background_rectangle(), path_arc=-PI/10),
+                FadeIn(itchy_group[-1], shift=2*UP*vert_shift, path_arc=-PI/10),
+                FadeOut(scaffold_down.inset_image.copy(), shift=2*UP*vert_shift, path_arc=-PI/10),
                 run_time=copy_duration
             ))
-        self.play(AnimationGroup(
-            ReplacementTransform(self.cs_bg_rect.copy(),thirty_bg_rect, path_arc=-PI/12),
-            FadeReplacementTransform(self.cs.copy(), thirty_cs, path_arc=-PI/12)
-        ), run_time=copy_duration)
-        # self.play(AnimationGroup(
-        #     FocusOn(thirty_cs.bg_rectangle.get_center()),
-        #     FadeIn(plot, scale=2),
-        #     lag_ratio=0.75
-        # ))
-        self.play(FadeIn(plot_title, shift=2*UP, scale=3, run_time=1.5))
-        self.wait()
-        skip_processing: bool = True
-        self.play(AnimationGroup(
-            PixelVisualizationAnimation(
-                self.pixel_visual,
-                duration,
-                "flips_early_main",
-                skip_processing
+        self.wait(3)
+
+        # final AnimationGroup
+        skip_processing: bool = False
+        timeline = {
+            0: [
+                PixelVisualizationAnimation(
+                    self.pixel_visual,
+                    duration,
+                    "flips_early_main",
+                    skip_processing
                 ),
-            PixelVisualizationAnimation(
-                scaffold1_down.inset_image,
-                duration,
-                "zoom1",
-                skip_processing
+                PixelVisualizationAnimation(
+                    scaffold1_down.inset_image,
+                    duration,
+                    "early_zoom1",
+                    skip_processing
+                ),
+                PixelVisualizationAnimation(
+                    scaffold2_down.inset_image,
+                    duration,
+                    "early_zoom2",
+                    skip_processing
+                ),
+                ReleaseTableOfDoublePendulums(itchy_groups[0][-1], duration),
+                ReleaseTableOfDoublePendulums(itchy_groups[1][-1], duration),
+            ],
+            13: AnimationGroup(
+                ReplacementTransform(self.cs_bg_rect.copy(),thirty_bg_rect, path_arc=-PI/10),
+                FadeReplacementTransform(self.cs.copy(), thirty_cs, path_arc=-PI/10),
+                run_time=3),
+            16: FadeIn(plot_title, shift=2*UP, scale=3, run_time=1.5),
+            17.5: lambda: AnimationGroup(
+                FocusOn(thirty_cs.bg_rectangle.get_center()),
+                FadeIn(plot, scale=2),
+                lag_ratio=0.75
             ),
-            PixelVisualizationAnimation(
-                scaffold2_down.inset_image,
-                duration,
-                "zoom2",
-                skip_processing
-            ),
-            ReleaseTableOfDoublePendulums(itchy_groups[0][-1], duration),
-            ReleaseTableOfDoublePendulums(itchy_groups[1][-1], duration),
-            MorphPlotWithAddedAxes(
-                main_dp,
-                plot,
-                (-31, -150),
-                list_of_cs,
-                run_time=4,
-            )
-        ))
+            23: lambda: MorphPlotWithAddedAxes(
+                    main_dp,
+                    plot,
+                    (-31, -150),
+                    list_of_cs,
+                    run_time=4,
+                )
+        }
+        play_timeline(self, timeline)
         self.wait()
         # endregion
 
