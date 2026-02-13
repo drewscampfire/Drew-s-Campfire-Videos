@@ -418,6 +418,13 @@ class MorphPlotWithAddedAxes(AnimateGhostsWithPlot):
         new_mobject = VGroup(plot, *[self.list_of_start_dots[current_frame]])
         self.mobject.become(new_mobject)
 
+    def clean_up_from_scene(self, scene: Scene) -> None:
+        self.main_dp.init_angle_1, self.main_dp.init_angle_2 = self.new_angle_pair
+        for list1 in self.list_of_start_dots:
+            for start_dot in list1:
+                scene.remove(start_dot)
+        super().clean_up_from_scene(scene)
+
 
 class SweepToCreateDoublePendulums(Animation):
     def __init__(

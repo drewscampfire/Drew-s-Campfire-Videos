@@ -2704,12 +2704,13 @@ class Scene6(ComplexScene):
         list_of_cs = [self.cs, scaffold1_down.cs_island, scaffold2_down.cs_island,
                       itchy_groups[0][1], itchy_groups[1][1]
                       ]
+        self.next_section(skip_animations=True)
         self.add_sound("Echoes of Tomorrow.mp3")
         self.play(AnimationGroup(
             Create(large_cs, shift=2 * UP, scale=0.8, run_time=1),
             FadeIn(large_pixel_visual, shift=LEFT * 6, run_time=1.5),
             FadeIn(large_table_title, shift=3 * UP, scale=2, run_time=1.5),
-            lag_ratio=0.8
+            lag_ratio=0.75
         ))
         self.play(AnimationGroup(
             ReplacementTransform(large_cs, self.cs),
@@ -2740,7 +2741,7 @@ class Scene6(ComplexScene):
         self.wait(3)
 
         # final AnimationGroup
-        skip_processing: bool = False
+        skip_processing: bool = True
         timeline = {
             0: [
                 PixelVisualizationAnimation(
@@ -2786,6 +2787,7 @@ class Scene6(ComplexScene):
                     run_time=4,
                 ),
         }
+        self.next_section(skip_animations=False)
         play_timeline(self, timeline)
         self.wait()
         # endregion
