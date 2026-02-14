@@ -2569,9 +2569,9 @@ class Scene6(ComplexScene):
         inset_1_range = [(-42.5, -22.5), (-166.25, -146.25)]
         inset_2_range = [(-33.5, -28.5), (-153, -148)]
         sim_labels = [-180, -90, 0, 90, 180]
-        dp_count_size = 6 # 32
-        duration = 30
-        plot_duration = 20
+        dp_count_size = 4 # 30
+        duration = 50 # 145
+        plot_duration = 15 # 50
 
         large_cs = get_standard_cs(labeled_values_for_x_override=sim_labels,
                                    labeled_values_for_y_override=sim_labels,).set_z_index(2)
@@ -2704,7 +2704,7 @@ class Scene6(ComplexScene):
         list_of_cs = [self.cs, scaffold1_down.cs_island, scaffold2_down.cs_island,
                       itchy_groups[0][1], itchy_groups[1][1]
                       ]
-        self.next_section(skip_animations=True)
+        self.next_section(skip_animations=False)
         self.add_sound("Echoes of Tomorrow.mp3")
         self.play(AnimationGroup(
             Create(large_cs, shift=2 * UP, scale=0.8, run_time=1),
@@ -2741,7 +2741,21 @@ class Scene6(ComplexScene):
         self.wait(3)
 
         # final AnimationGroup
-        skip_processing: bool = True
+        move_plot_dict = {
+            20.5: (-31.3, -149.5),
+            30.5: (-31.3, -149.5),
+            45.58: (-31.3, -149.5),
+            55.68: (-31.3, -149.5),
+            65.75: (-31.3, -149.5),
+            75.9: (-31.3, -149.5),
+            85.95: (-31.3, -149.5),
+            96.13: (-31.3, -149.5),
+            106.20: (-31.3, -149.5),
+            116.4: (-31.3, -149.5),
+            126.68: (-31.3, -149.5),
+            136.7: (-31.3, -149.5),
+        }
+        skip_processing: bool = False
         timeline = {
             0: [
                 PixelVisualizationAnimation(
@@ -2779,17 +2793,24 @@ class Scene6(ComplexScene):
                     list_of_cs,
                     run_time=4,
                 ),
-            25: lambda: MorphPlotWithAddedAxes(
+            26: lambda: MorphPlotWithAddedAxes(
                     main_dp,
                     plot,
                     (-33, -163),
                     list_of_cs,
                     run_time=4,
                 ),
+            31: lambda: MorphPlotWithAddedAxes(
+                main_dp,
+                plot,
+                (-30.8, -148.3),
+                list_of_cs,
+                run_time=4,
+            ),
         }
         self.next_section(skip_animations=False)
         play_timeline(self, timeline)
-        self.wait()
+        self.wait(100)
         # endregion
 
 
