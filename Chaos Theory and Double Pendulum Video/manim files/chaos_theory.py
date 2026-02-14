@@ -2571,7 +2571,7 @@ class Scene6(ComplexScene):
         sim_labels = [-180, -90, 0, 90, 180]
         dp_count_size = 4 # 30
         duration = 50 # 145
-        plot_duration = 15 # 50
+        plot_duration = 50 # 50
 
         large_cs = get_standard_cs(labeled_values_for_x_override=sim_labels,
                                    labeled_values_for_y_override=sim_labels,).set_z_index(2)
@@ -2741,20 +2741,6 @@ class Scene6(ComplexScene):
         self.wait(3)
 
         # final AnimationGroup
-        move_plot_dict = {
-            20.5: (-31.3, -149.5),
-            30.5: (-31.3, -149.5),
-            45.58: (-31.3, -149.5),
-            55.68: (-31.3, -149.5),
-            65.75: (-31.3, -149.5),
-            75.9: (-31.3, -149.5),
-            85.95: (-31.3, -149.5),
-            96.13: (-31.3, -149.5),
-            106.20: (-31.3, -149.5),
-            116.4: (-31.3, -149.5),
-            126.68: (-31.3, -149.5),
-            136.7: (-31.3, -149.5),
-        }
         skip_processing: bool = False
         timeline = {
             0: [
@@ -2786,31 +2772,43 @@ class Scene6(ComplexScene):
             17: FadeIn(plot_title, shift=2*UP, scale=3, run_time=1.5),
             18: FocusOn(thirty_cs.bg_rectangle.get_center()),
             19.5: FadeIn(plot, scale=2),
-            20.5: lambda: MorphPlotWithAddedAxes(
-                    main_dp,
-                    plot,
-                    (-31, -150),
-                    list_of_cs,
-                    run_time=4,
-                ),
-            26: lambda: MorphPlotWithAddedAxes(
-                    main_dp,
-                    plot,
-                    (-33, -163),
-                    list_of_cs,
-                    run_time=4,
-                ),
-            31: lambda: MorphPlotWithAddedAxes(
+        }
+        move_plot_list = [
+            [20.5, (-31.3, -149.5)],
+            [30.5, (-29, -149.5)],
+            [45.58, (-32, -150.5)],
+            [55.68, (-33.33, -163)],
+            [65.75, (-31.44, -163)],
+            [85.95, (-30.7, -151.5)],
+            [96.13, (-32, -148.2)],
+            [106.20, (-29.5, -149.5)],
+            [116.4, (-32, -152)],
+            [136.7, (-31.3, -149.5)],
+        ]
+
+        # assign MorphPlot Anim to every timestamp and its corresponding new angle pair
+        def create_morph_animation(angle_pair, run_time):
+            return lambda: MorphPlotWithAddedAxes(
                 main_dp,
                 plot,
-                (-30.8, -148.3),
+                angle_pair,
                 list_of_cs,
-                run_time=4,
-            ),
-        }
+                run_time=run_time,
+            )
+
+        for i, (time_stamp, angle_pair) in enumerate(move_plot_list):
+            if i < len(move_plot_list) - 1:
+                next_time_stamp = move_plot_list[i + 1][0]
+                run_time = next_time_stamp - time_stamp
+            else:
+                # Last animation - use a default duration
+                run_time = 20.0
+
+            print(f"new entry: angle_pair: {angle_pair}, run_time: {run_time}")
+            timeline[time_stamp] = create_morph_animation(angle_pair, run_time)
+
         self.next_section(skip_animations=False)
         play_timeline(self, timeline)
-        self.wait(100)
         # endregion
 
 
