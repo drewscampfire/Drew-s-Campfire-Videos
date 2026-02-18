@@ -2801,7 +2801,6 @@ class Scene6(ComplexScene):
                 next_time_stamp = move_plot_list[i + 1][0]
                 run_time = next_time_stamp - time_stamp
             else:
-                # Last animation - use a default duration
                 run_time = 20.0
 
             print(f"new entry: angle_pair: {angle_pair}, run_time: {run_time}")
