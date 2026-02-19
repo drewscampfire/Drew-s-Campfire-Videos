@@ -27,7 +27,7 @@ UPPER_RIGHT_CORNER = np.array((config.frame_width / 2, config.frame_height / 2, 
 LOWER_LEFT_CORNER = np.array((-config.frame_width / 2, -config.frame_height / 2, 0))
 
 
-def play_timeline(scene, timeline):
+def play_anims(scene, timeline):
     """
     Plays a timeline of animations on a given scene with precise timing control.
 
@@ -65,7 +65,7 @@ def play_timeline(scene, timeline):
             ],
             9: lambda: Write(text.next_to(progress_bar, UP, buff=1), run_time=3)
         }
-        play_timeline(self, timeline)
+        play_anims(self, timeline)
 ```
 
         Sequential transformations on same mobject:
@@ -74,7 +74,7 @@ def play_timeline(scene, timeline):
             0: lambda: MorphPlotWithAddedAxes(dp, plot, (-31, -150), cs_list, run_time=4),
             4: lambda: MorphPlotWithAddedAxes(dp, plot, (-33, -163), cs_list, run_time=4),
         }
-        play_timeline(self, timeline)
+        play_anims(self, timeline)
         # The first animation finishes and cleans up at t=4, ensuring plot state is updated
         # before the second animation starts
 ```
@@ -82,7 +82,7 @@ def play_timeline(scene, timeline):
     Notes:
         - All animations are converted to updaters and added to the scene
         - The scene waits appropriately between scheduled events
-        - Times are measured from the start of play_timeline execution
+        - Times are measured from the start of play_anims execution
         - Animations that complete between timeline events have finish() and
           clean_up_from_scene() called automatically
         - This ensures mobject state is properly finalized and removers are handled
@@ -145,60 +145,110 @@ def play_timeline(scene, timeline):
             anim.clean_up_from_scene(scene)
 
 
+# ---------------------------------------------------------------------------
+# Module-level subscene decorators
+# ---------------------------------------------------------------------------
+# These are used directly in subclassed ComplexScene scenes with @run, @skip, @ignore.
+
+
+def run(*args, **section_params):
+    """
+    Decorator -- marks a subscene method to be played when construct() calls
+    play_subscenes(). Accepts optional Manim next_section() keyword arguments.
+    """
+    def decorator(method: Callable) -> Callable:
+        method._subscene_meta = {"mode": "run", "params": section_params}
+        config.output_file = f"{method.__name__}.{file_type}"
+        return method
+
+    if args and callable(args[0]):
+        return decorator(args[0])
+    return decorator
+
+
+def skip(*args, **section_params):
+    """
+    Decorator -- same as @run but passes skip_animations=True, causing the
+    section to render through instantly.
+    """
+    section_params.pop("skip_animations", None)  # prevent accidental double-set
+    section_params["skip_animations"] = True
+
+    def decorator(method: Callable) -> Callable:
+        method._subscene_meta = {"mode": "run", "params": section_params}
+        config.output_file = f"{method.__name__}.{file_type}"
+        return method
+
+    if args and callable(args[0]):
+        return decorator(args[0])
+    return decorator
+
+
+def ignore(method_or_callable=None):
+    """
+    Decorator — marks a subscene method to be completely excluded from
+    play_subscenes(). Useful for work-in-progress or archived subscenes.
+    """
+
+    def decorator(method: Callable) -> Callable:
+        method._subscene_meta = {"mode": "ignore"}
+        return method
+
+    if callable(method_or_callable):
+        return decorator(method_or_callable)
+    return decorator
+
+
 class ComplexScene(Scene):
-    _registered_subscenes = []
+    """
+    Base class for all Drew's Campfire scenes.
 
-    def add_background(self):
+    construct() can call self.add_background() then self.play_subscenes().
+    """
+
+    _registered_subscenes: list[tuple[Callable, dict]]
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls._registered_subscenes = []
+
+        for attr_name in cls.__dict__:
+            method = cls.__dict__[attr_name]
+            if callable(method) and hasattr(method, "_subscene_meta"):
+                meta = method._subscene_meta
+                if meta["mode"] == "run":
+                    cls._registered_subscenes.append((method, meta["params"]))
+
+    def add_background(self) -> None:
         if use_background:
-            background = ImageMobject("background_image.png", name="scene_background").set_opacity(config.background_opacity)
-            background.scale_to_fit_width(config.frame_width)
-            self.add(background.set_z_index(-100))
+            bg = (
+                ImageMobject("background_image.png", name="scene_background")
+                .set_opacity(config.background_opacity)
+                .scale_to_fit_width(config.frame_width)
+                .set_z_index(-100)
+            )
+            self.add(bg)
 
-    def play_subscenes(self: ComplexScene):
+    def play_subscenes(self) -> None:
+        """
+        Iterate over registered subscenes in declaration order and play them.
+        """
         for method, params in self._registered_subscenes:
-            method_name = method.__qualname__.split('.')[1]
-            print(f"\n{'#' * 50} running run {method_name} with {fps} fps "
-                  f"and dims {config.pixel_height}x{config.pixel_width}\n")
-
-            class_name = method.__qualname__.split(".")[0]
-            if class_name != self.__class__.__name__:
-                continue
-            self.next_section(**params)
+            method_name = method.__qualname__.split(".")[-1]
+            print(
+                f"\n{'#' * 50} running {method_name} "
+                f"@ {fps} fps  {config.pixel_height}x{config.pixel_width}\n"
+            )
+            self.next_section(name=method_name, **params)
             method(self)
 
-    def wait(self, duration=1, stop_condition=None, frozen_frame=False):
-        """
-        Custom wait method for this project.
-        Defaults to frozen_frame=False to ensure complete PNG sequences
-        for video editing.
-        """
-        # Call the original wait method from the parent Scene class
+    def wait(self, duration: float = 1, stop_condition=None, frozen_frame: bool = False):
         super().wait(duration=duration, stop_condition=stop_condition, frozen_frame=frozen_frame)
 
-    @classmethod
-    def run(cls: ComplexScene, *args, **section_params):
-        def wrapper(method, self, *m_args, **m_kwargs):
-            return method(self, *m_args, **m_kwargs)
 
-        def decorator(method):
-            @wraps(method)
-            def wrapped(self, *m_args, **m_kwargs):
-                return wrapper(method, self, *m_args, **m_kwargs)
-            cls._registered_subscenes.append((wrapped, section_params))
-            config.output_file = f"{method.__qualname__.split('.')[1]}.{file_type}"
-            return wrapped
-        if args and callable(args[0]):
-            return decorator(args[0])
-        else:
-            return decorator
 
-    def skip(*args, **kwargs):
-        kwargs.pop("skip_animations", None)
 
-        return ComplexScene.run(*args, skip_animations=True, **kwargs)
 
-    def ignore(*args, **kwargs):
-        pass
 
 
 class ComplexAnimation(Animation):

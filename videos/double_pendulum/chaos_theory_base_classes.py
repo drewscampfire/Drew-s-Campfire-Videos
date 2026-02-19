@@ -2,73 +2,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from functools import cached_property
-import numpy as np
 from math import sin, cos
 import math
-import torch
 from scipy.integrate import solve_ivp
 from torchdiffeq import odeint
+from src.debug_utils import *
+from manim_config import device, fps, rtol, atol, MAX_GB, quality, dp_data_file_dir
+from manim import DEGREES, linear
 from typing import Callable
 from tqdm import tqdm
+from src.custom_manim import get_unique_filename
 import os
 import time
-import argparse
-
-parser = argparse.ArgumentParser(
-    description="Compute double pendulum flip indices for Vast.ai. Allows GPU VRAM limit specification."
-)
-parser.add_argument(
-    '--max_gb',
-    type=float,
-    default=4.5,
-    help="Maximum GPU VRAM in GB to use for batch size calculations (e.g., 4.5, 10.0, 22.0)."
-)
-cli_args = parser.parse_args() # Parse command-line arguments
-
-if torch.cuda.is_available():
-    device = torch.device('cuda')
-    print(f"Using GPU: {torch.cuda.get_device_name(0)}")
-else:
-    device = torch.device('cpu')
-    raise ValueError("GPU not found!")
-
-fps = 30
-QUALITY_STR = 'fourk_quality'
-MAX_GB = cli_args.max_gb # Original was 4.5
-print(f"INFO: Configured MAX_GB (VRAM limit for batching) to: {MAX_GB} GB") # Added for confirmation
-rtol = 1e-9
-atol = 1e-11
-DEGREES = np.pi / 180
-DATA_DIR = '.'
-
-
-def linear(t: float) -> float:
-    return t
-
-def timer(func):
-    def wrapper(*args, **kwargs):
-        start_time = time.perf_counter()
-        result = func(*args, **kwargs)
-        end_time = time.perf_counter()
-        print(f"TIMER: {func.__name__}() took {end_time - start_time:.2f} seconds.")
-        return result
-    return wrapper
-
-def get_indices_with_all_zeroes(array: np.memmap, chunk_size: int = 50000) -> list[int]:
-    results = []
-    total_cols = array.shape[1]
-
-    for i in tqdm(range(0, total_cols, chunk_size), desc="Processing chunks"):
-        end_idx = min(i + chunk_size, total_cols)
-        chunk = torch.from_numpy(array[:, i:end_idx, :]).to(device)
-        zero_mask = torch.all(torch.all(chunk == 0, dim=0), dim=1)
-        del chunk
-        zero_indices = torch.where(zero_mask)[0] + i
-        del zero_mask
-        results.extend(zero_indices.cpu().tolist())
-        torch.cuda.empty_cache()
-
-    return results
 
 
 @dataclass
@@ -111,15 +56,14 @@ class ComputeDoublePendulumSimulation:
         return transformed_array
 
     def angle_values_in_rads(self) -> tuple[np.ndarray, np.ndarray]:
-        # --- Debug: Print dtypes before calling solve_ivp ---
         init_cond_np = np.array((self.angle_pair[0] * DEGREES,
                                  self.angle_pair[1] * DEGREES, 0, 0))
         t_eval_np = self.get_t_values()
-        print(
-            "solve_ivp call:",
-            f"initial conditions dtype = {init_cond_np.dtype}",
-            f"t_eval dtype = {t_eval_np.dtype}"
-        )
+        # print(
+        #     "solve_ivp call:",
+        #     f"initial conditions dtype = {init_cond_np.dtype}",
+        #     f"t_eval dtype = {t_eval_np.dtype}"
+        # )
         # --------------------------------------------------------
 
         ans = solve_ivp(
@@ -302,6 +246,12 @@ class OptimizedForPixelGridComputation(OptimizedDoublePendulumComputation):
         super().__init__(angle_pairs, t_span, t_eval_rate_func)
 
     @staticmethod
+    def normalize_angles_in_rads(angle_progression: torch.Tensor) -> torch.Tensor:
+        x = torch.fmod(angle_progression, 2 * torch.pi)
+        y = torch.fmod(angle_progression, torch.pi)
+        return 2 * y - x
+
+    @staticmethod
     def _normalize_angles_in_rads_inplace(angle_progression: torch.Tensor) -> None:
         term_fmod_pi = torch.fmod(angle_progression, torch.pi)
         angle_progression.fmod_(2 * torch.pi)
@@ -310,31 +260,152 @@ class OptimizedForPixelGridComputation(OptimizedDoublePendulumComputation):
         del term_fmod_pi
 
     @timer
+    def pixel_visuals_data(self,
+                           color_func: Callable,
+                           width_px_num: int,
+                           height_px_num: int,
+                           use_existing_dat: str | None = None,
+                           skip_processing: bool = False
+                           ) -> np.ndarray:
+        print(f"\n----------> running {self.__class__.__name__} by simulating {len(self.angle_pairs):,} double pendulums lasting {self.t_span} seconds each")
+
+        all_initial_conditions = torch.column_stack((
+            self.angle_1_values * DEGREES,
+            self.angle_2_values * DEGREES,
+            torch.zeros(self.num_of_dps),
+            torch.zeros(self.num_of_dps)
+        ))
+        n_timesteps = len(self.get_t_values())  # Number of time steps in the ODE solution
+        state_dim, bytes_per_elem = 4, 8  # 4 state variables, 8 bytes per element (float64)
+        max_num_of_dp_per_batch = int(MAX_GB * 1024 ** 3) // (n_timesteps * state_dim * bytes_per_elem)
+        num_of_batches = math.ceil(all_initial_conditions.shape[0] / max_num_of_dp_per_batch)
+
+        if use_existing_dat is not None:
+            file_name = os.path.join(dp_data_file_dir, f"{use_existing_dat + '_' + str(fps) + 'fps_' + quality}.dat")
+        else:
+            file_name = get_unique_filename(base_name='all_solutions', directory=dp_data_file_dir)
+
+        file_exists = os.path.exists(file_name)
+        all_solutions_mmap = np.memmap(
+            file_name,
+            dtype=np.uint8,
+            mode='w+' if not file_exists else 'r+',
+            shape=(int(fps * self.t_span), width_px_num * height_px_num, 4)
+        )
+        if not file_exists:
+            all_solutions_mmap[:] = 0
+            print(f"\n\n must only run if creating a new memmap")
+
+        if skip_processing:
+            return all_solutions_mmap.reshape((int(fps * self.t_span), height_px_num, width_px_num, 4))
+
+        indices_with_zeroes = sorted(set(get_indices_with_all_zeroes(all_solutions_mmap)))
+        print(f"num of indices left to process: {len(indices_with_zeroes)}")
+        print(f"            The memmap occupies approximately {all_solutions_mmap.nbytes / (1024 * 1024):.2f} MB.\n")
+
+        # --- Debug: Print dtypes before entering the loop ---
+        t_values = self.get_t_values()
+        print(
+            "ODEINT call in pixel_visuals_data:",
+            f"\nall_initial_conditions dtype = {all_initial_conditions.dtype}",
+            f"\nt_eval dtype = {t_values.dtype}"
+        )
+        # ---------------------------------------------------------
+
+        for i in tqdm(range(num_of_batches), desc="Processing pixel_visuals_data"):
+            if i == num_of_batches - 1:
+                init_conditions = all_initial_conditions[i * max_num_of_dp_per_batch:]
+            else:
+                init_conditions = all_initial_conditions[i * max_num_of_dp_per_batch: (i + 1) * max_num_of_dp_per_batch]
+            mmap_start_index = i * max_num_of_dp_per_batch
+
+            for j in range(mmap_start_index, (i + 1) * max_num_of_dp_per_batch + 1):
+                if j in indices_with_zeroes:
+                    print(f"\nprocessing start index {mmap_start_index}")
+                    break
+            else:
+                print(f"\nskipping start index {mmap_start_index}")
+                continue
+
+            start_time = time.time()
+
+            solution = odeint(
+                self.funcs,  # function to solve
+                init_conditions.to(device),  # initial conditions (tensor)
+                t_values.to(device),  # time points (tensor)
+                method='dopri8',
+                rtol=rtol,
+                atol=atol
+            )
+            end_time = time.time()
+            execution_time = end_time - start_time
+            print(f"Execution time: {execution_time} seconds")
+
+            del init_conditions
+            torch.cuda.empty_cache()
+
+            solution = solution[:, :, :2].to(torch.float32).permute(2, 1, 0)
+            angle_1_prog = self.normalize_angles_in_rads(solution[0]) / DEGREES
+            angle_2_prog = self.normalize_angles_in_rads(solution[1]) / DEGREES
+            del solution
+            torch.cuda.empty_cache()
+
+            combined = torch.stack((angle_1_prog.T, angle_2_prog.T), dim=2)
+            del angle_1_prog, angle_2_prog
+            torch.cuda.empty_cache()
+
+            combined = color_func(combined.view(-1, 2)).view((int(fps * self.t_span), -1, 4))
+            int_rgba = (combined * 255).to(torch.uint8).cpu().numpy()
+            del combined
+            torch.cuda.empty_cache()
+
+            if i == num_of_batches - 1:
+                all_solutions_mmap[:, mmap_start_index:, :] = int_rgba
+            else:
+                all_solutions_mmap[:, mmap_start_index:mmap_start_index + max_num_of_dp_per_batch, :] = int_rgba
+
+            del int_rgba
+            torch.cuda.empty_cache()
+
+        return all_solutions_mmap.reshape((int(fps * self.t_span), height_px_num, width_px_num, 4))
+
+    @timer
     def flip_visuals_index_data(
             self,
             jump_threshold: float = 180,
+            use_existing_dat: str | None = None,
+            skip_processing: bool = False,
+            target_flip_number: int = 1,
     ) -> np.ndarray:
         # --- Revised Print Statement ---
         num_dps_input = self.angle_pairs.shape[0]
-        print(f"\n----------> Running flip_visuals_index_data:")
+        print(f"\n----------> Running flip_visuals_index_data (Combined System Count):")
         print(f"              Input angle pairs shape: ({num_dps_input:,}, 2)")
-        print(f"              Simulation time per pendulum (if run): {self.t_span} seconds")
+        print(f"              Target System Flip: #{target_flip_number}")
         # --- End Revised Print Statement ---
 
-        file_name = os.path.join(DATA_DIR, "scene7_8_0th__flip_30fourk_quality.dat")
+        if use_existing_dat is not None:
+            file_name = os.path.join(dp_data_file_dir, f"{use_existing_dat + '_flip_' + str(fps) + quality}.dat")
+        else:
+            base_name = f'flip_index_data_combined_n{target_flip_number}'
+            file_name = get_unique_filename(base_name=base_name, directory=dp_data_file_dir)
 
-        try:
-            index_data_mmap = np.memmap(
-                file_name,
-                dtype=np.int16,
-                mode='r+',
-                shape=(self.num_of_dps,)
-            )
-        except:
-            raise ValueError(f"File {file_name} does not exist")
+        file_exists = os.path.exists(file_name)
+        index_data_mmap = np.memmap(
+            file_name,
+            dtype=np.int16,
+            mode='w+' if not file_exists else 'r+',
+            shape=(self.num_of_dps,)
+        )
+        if not file_exists:
+            index_data_mmap[:] = 0
+            print("\n\n must only run if creating a new memmap")
+
+        if skip_processing:
+            return index_data_mmap
 
         t_values = self.get_t_values()
-        n_timesteps = len(t_values)  # Number of time steps in the ODE solution
+        n_timesteps = len(t_values)
         # 4 state variables; 8 bytes per element (float64)
         max_num_of_dp_per_batch = int(MAX_GB * 1024 ** 3) // (n_timesteps * 4 * 8)
         num_of_batches = math.ceil(self.num_of_dps / max_num_of_dp_per_batch)
@@ -405,64 +476,38 @@ class OptimizedForPixelGridComputation(OptimizedDoublePendulumComputation):
                 del angle_diffs
                 torch.cuda.empty_cache()
 
-                true_indices = angle_mask_bool.to(torch.int8).argmax(dim=1)
-
-                all_false_mask = ~angle_mask_bool.any(dim=1)  # This line can remain as is
+                flips_per_step = angle_mask_bool.long().sum(dim=2)
                 del angle_mask_bool
                 torch.cuda.empty_cache()
 
-                true_indices[all_false_mask] = torch.iinfo(true_indices.dtype).max  # Max value for no flip
-
-                indices = torch.minimum(true_indices[:, 0], true_indices[:, 1]) + 1
-                del true_indices
+                system_cumulative = flips_per_step.cumsum(dim=1)
+                del flips_per_step
                 torch.cuda.empty_cache()
 
-                combined_all_false = all_false_mask[:, 0] & all_false_mask[:, 1]
-                indices[combined_all_false] = -1
-                del all_false_mask, combined_all_false
+                target_mask = system_cumulative >= target_flip_number
+
+                has_reached_target = system_cumulative[:, -1] >= target_flip_number
+                del system_cumulative
                 torch.cuda.empty_cache()
 
-                indices_np = indices.to(torch.int16).cpu().numpy()
-                del indices
+                found_indices = target_mask.to(torch.int8).argmax(dim=1)
+                del target_mask
+                torch.cuda.empty_cache()
+
+                final_indices = torch.where(
+                    has_reached_target,
+                    found_indices + 1,
+                    torch.tensor(-1, device=device, dtype=found_indices.dtype)
+                )
+
+                del has_reached_target, found_indices
+                torch.cuda.empty_cache()
+
+                indices_np = final_indices.to(torch.int16).cpu().numpy()
+                del final_indices
                 torch.cuda.empty_cache()
 
                 index_data_mmap[start_index:end_index] = indices_np
                 index_data_mmap.flush()
 
         return index_data_mmap
-
-
-if __name__ == "__main__":
-    print("Starting Double Pendulum Flip Index Computation for Vast.ai...")
-    t_span_simulation = 70.0  # seconds
-
-    path_to_batched_angle_pairs = os.path.join(DATA_DIR, "scene7_8_batched.dat")
-
-    try:
-        num_zoom_frames = 42 * fps  # from zoom_flip_params[0]["duration"]
-        pixels_per_frame = 2000 * 2000  # from CrispFlipStaticVisuals -> pixel_length
-        expected_rows = num_zoom_frames * pixels_per_frame
-
-        angle_pairs_np_mmap = np.memmap(
-            path_to_batched_angle_pairs,
-            dtype=np.float64,
-            mode='r',
-            shape=(expected_rows, 2)
-        )
-        print(f"Successfully memmapped angle_pairs_np_mmap with shape {angle_pairs_np_mmap.shape}")
-
-    except Exception as e:
-        print(f"Error loading or shaping {path_to_batched_angle_pairs}: {e}")
-        print("Please ensure the file exists and its shape is correctly estimated for memmap.")
-        exit(1)
-
-    print("Instantiating OptimizedForPixelGridComputation...")
-    computation_instance = OptimizedForPixelGridComputation(
-            angle_pairs_np_mmap,
-            t_span_simulation
-        )
-
-    print("Calling flip_visuals_index_data...")
-    output_mmap = computation_instance.flip_visuals_index_data()
-    print("You can now copy this .dat file back from the vast.ai instance.")
-

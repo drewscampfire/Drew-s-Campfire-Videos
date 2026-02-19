@@ -6,7 +6,7 @@ from manim_config import *
 from color_utils_chaos_theory import TorchColorFuncs as TCF
 from chaos_theory_base_classes import *
 from color_utils_chaos_theory import *
-from mydebugger import timer, delete_memmap_files
+from src.debug_utils import timer, delete_memmap_files
 from tqdm import tqdm
 
 

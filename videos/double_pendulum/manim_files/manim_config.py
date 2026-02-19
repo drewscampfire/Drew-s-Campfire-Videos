@@ -6,8 +6,8 @@ if torch.cuda.is_available():
 else:
     print(f"\nNo GPU found!\n")
     device = None
-fps = 12
-quality = 'low_quality'  # ['fourk_quality', 'high_quality', 'medium_quality']
+fps = 24
+quality = 'high_quality'  # ['fourk_quality', 'high_quality', 'medium_quality']
 MAX_GB = 3.5
 config.quality = quality
 config.frame_rate = fps

@@ -3,8 +3,11 @@ import subprocess
 from chaos_theory_subclassed_animations import *
 from color_utils_chaos_theory import *
 from color_utils_chaos_theory import TorchColorFuncs as TCF
-from custom_manim import *
-from mydebugger import timer, delete_memmap_files, trim_audio
+from src.custom_manim import *
+from src.debug_utils import timer, delete_memmap_files, trim_audio
+
+scale_value = 5.6 * SCENE_PIXELS / pixel_length
+shift_value = 3.81 * LEFT + UP * 0.95
 
 
 def get_dp_graph(
@@ -69,10 +72,53 @@ def get_standard_cs(
     )
 
 
+def get_four_insets(visuals: PixelStaticVisuals | FlipStaticVisuals, include_image: bool) -> list[InsetScaffold]:
+    inset_side_length = 3.8
+    outgrowth_ul = InsetScaffold(
+        visuals,
+        (60, 135),
+        (45, 120),
+        inset_side_length,
+        inset_side_length,
+        2 * UP + 1.1 * RIGHT,
+        inset_line_dirs=[UL, DL],
+        include_image=include_image
+    )
+    island_ur = InsetScaffold(
+        outgrowth_ul.inset_image,
+        (99, 103),
+        (113, 117),
+        inset_side_length,
+        inset_side_length,
+        2 * UP + 5.1 * RIGHT,
+        inset_line_dirs=[UL, DL],
+        include_image=include_image
+    )
+    island_dl = InsetScaffold(
+        visuals,
+        (-50, -15),
+        (-170, -135),
+        inset_side_length,
+        inset_side_length,
+        2 * DOWN + 1.1 * RIGHT,
+        inset_line_dirs=[UL, DL],
+        include_image=include_image
+    )
+    island_dr = InsetScaffold(
+        island_dl.inset_image,
+        (-36, -30),
+        (-166, -160),
+        inset_side_length,
+        inset_side_length,
+        2 * DOWN + 5.1 * RIGHT,
+        inset_line_dirs=[UL, DL],
+        include_image=include_image
+    )
+
+    return [outgrowth_ul, island_ur, island_dl, island_dr]
+
+
 class Scene4(ComplexScene):
-    run = ComplexScene.run
-    skip = ComplexScene.skip
-    ignore = ComplexScene.ignore
 
     def setup(self):
         self.add(NumberPlane())
@@ -691,9 +737,6 @@ class Scene4(ComplexScene):
 
 
 class Scene5(ComplexScene):
-    run = ComplexScene.run
-    skip = ComplexScene.skip
-    ignore = ComplexScene.ignore
 
     def setup(self):
         self.add(NumberPlane())
@@ -1173,60 +1216,7 @@ class Scene5(ComplexScene):
         self.play(ReleaseTableOfDoublePendulums(table_of_dps, 60))
 
 
-def get_four_insets(visuals: PixelStaticVisuals | FlipStaticVisuals, include_image: bool) -> list[InsetScaffold]:
-    inset_side_length = 3.8
-    outgrowth_ul = InsetScaffold(
-        visuals,
-        (60, 135),
-        (45, 120),
-        inset_side_length,
-        inset_side_length,
-        2 * UP + 1.1 * RIGHT,
-        inset_line_dirs=[UL, DL],
-        include_image=include_image
-    )
-    island_ur = InsetScaffold(
-        outgrowth_ul.inset_image,
-        (99, 103),
-        (113, 117),
-        inset_side_length,
-        inset_side_length,
-        2 * UP + 5.1 * RIGHT,
-        inset_line_dirs=[UL, DL],
-        include_image=include_image
-    )
-    island_dl = InsetScaffold(
-        visuals,
-        (-50, -15),
-        (-170, -135),
-        inset_side_length,
-        inset_side_length,
-        2 * DOWN + 1.1 * RIGHT,
-        inset_line_dirs=[UL, DL],
-        include_image=include_image
-    )
-    island_dr = InsetScaffold(
-        island_dl.inset_image,
-        (-36, -30),
-        (-166, -160),
-        inset_side_length,
-        inset_side_length,
-        2 * DOWN + 5.1 * RIGHT,
-        inset_line_dirs=[UL, DL],
-        include_image=include_image
-    )
-
-    return [outgrowth_ul, island_ur, island_dl, island_dr]
-
-
-scale_value = 5.6 * SCENE_PIXELS / pixel_length
-shift_value = 3.81 * LEFT + UP * 0.95
-
-
 class Scene6(ComplexScene):
-    run = ComplexScene.run
-    skip = ComplexScene.skip
-    ignore = ComplexScene.ignore
 
     @staticmethod
     def get_tracker_and_static_tracker_copy(
@@ -1267,27 +1257,47 @@ class Scene6(ComplexScene):
         self.add_background()
         self.play_subscenes()
 
-    @ignore
-    def scene6_1_revisit_and_6_2(self):
-        self.wait()
+    @run
+    def scene6_introducing_pixel_map(self):
+        """
+        Covers scenes 6.1 through 6.4.
+
+        6.1  The configuration space grid (TableOfDoublePendulums) pertaining to 'all possible positions' fades in.
+        6.2  A single pendulum is released; a tracker square follows its (theta1, theta2)
+             coordinate as it evolves.
+        6.3  Configuration space transforms into pixel grid. Pixel resolution goes from 40x40 blocky squares
+             through 80, 160, 320, and finally the full-resolution PixelStaticVisuals image. A second pendulum
+             is tracked on the smooth image to demonstrate the position-color link.
+        6.4  Every pendulum in the "all possible initial positions" table simultaneously morphs into a pixel color
+             and all pendulums are released.
+        """
+
         # region 6.1 and 6.2 objects
+
+        # cs: scaled-down axes (6/7 of full size), shifted to the left half of the frame.
+        # Off-screen during 6.1 and 6.2; slides in during 6.4 to hold new_table_of_dps
+        # while cs2 and the pixel image occupy the right half.
         cs = DynamicAxes(
             x_range=(-180, 180),
             y_range=(-180, 180),
-            x_length=(pixel_length / SCENE_PIXELS) * (6/7),
-            y_length=(pixel_length / SCENE_PIXELS) * (6/7),
+            x_length=(pixel_length / SCENE_PIXELS) * (6 / 7),
+            y_length=(pixel_length / SCENE_PIXELS) * (6 / 7),
             x_is_in_degrees=True,
             y_is_in_degrees=True,
-            font_size_x=20 * (6/7),
-            font_size_y=20 * (6/7),
+            font_size_x=20 * (6 / 7),
+            font_size_y=20 * (6 / 7),
             include_zero_lines=False,
             use_constant_tick_length=True,
-            x_line_to_number_buff=0.125 * (6/7),
-            y_line_to_number_buff=0.125 * (6/7),
-            tick_length=0.015 * (6/7)
+            x_line_to_number_buff=0.125 * (6 / 7),
+            y_line_to_number_buff=0.125 * (6 / 7),
+            tick_length=0.015 * (6 / 7)
         ).shift(LEFT * 3.4).set_z_index(2)
         cs_bg_rect = cs.get_background_rectangle().set_z_index(0)
         cs_group = Group(cs, cs_bg_rect)
+
+        # cs2: full-size central axes; the main canvas for 6.1 through 6.3.
+        # In 6.3 it shifts right to share the frame with the pendulum,
+        # then scales to 6/7 and shifts further right in 6.4 when cs appears.
         cs2 = DynamicAxes(
             x_range=(-180, 180),
             y_range=(-180, 180),
@@ -1307,7 +1317,9 @@ class Scene6(ComplexScene):
         cs2_group = Group(cs2, cs2_bg_rect)
         move_relative_to(cs2_group, cs2_bg_rect.get_center(), ORIGIN)
 
-        table_of_dps = TableOfDoublePendulums(cs2, 40, 40).set_z_index(2)  # R: (40, 40)
+        table_of_dps = TableOfDoublePendulums(cs2, 16, 16).set_z_index(2)  # FINAL: (40, 40)
+
+        # table_title2 drops "INITIAL"
         table_title = Tex(
             "ALL POSSIBLE ", "INITIAL ", "POSITIONS",
             fill_color=AMBER_ORANGE,
@@ -1319,14 +1331,20 @@ class Scene6(ComplexScene):
             tex_template=get_font_for_tex("Montserrat Medium")
         ).scale(0.5).next_to(cs2_bg_rect, UP, buff=0.05).set_z_index(3)
         Group(cs2_group, table_title, table_title2, table_of_dps).move_to(ORIGIN)
+
+        # The pendulum starts off-screen left; slides in alongside the shifted table in 6.2.
         dp_master = DoublePendulum((0, 0))
         dp = dp_master.create_double_pendulum(1.5, 1.5).set_z_index(4)
         move_relative_to(dp, dp.rod1.get_start(), LEFT * 4)
         # endregion
 
         # region 6.1 and 6.2 animations
+        self.wait()
+
+        # 6.1: full grid of miniature pendulums scales in from zero.
         self.play(FadeIn(cs2_bg_rect, cs2, table_title, table_of_dps, scale=0, rate_func=smootherstep))
-        """
+
+        # 6.2: shorten the title, shift the table right, bring the pendulum in from the left.
         self.play(ReplacementTransform(table_title, table_title2, run_time=1, rate_func=smooth))
         self.play(
             MoveRelative(
@@ -1340,23 +1358,30 @@ class Scene6(ComplexScene):
         dp_visualizer.angle_1_value.set_z_index(5)
         dp_visualizer.angle_2_value.set_z_index(5)
         self.add(dp_visualizer)
+
+        # Manually set the pendulum to the chosen initial condition (80°, 20°).
         self.play(ManualDoublePendulumAnimation(dp, (80, 0), 1))
         self.play(ManualDoublePendulumAnimation(dp, (80, 20), 0.5))
         self.wait(0.5)
         dp_master.init_angle_1 = dp.angle_pair[0]
         dp_master.init_angle_2 = dp.angle_pair[1]
 
+        # Release the pendulum; TrackDoublePendulumWithTable highlights the grid cell
+        # matching the current (theta1, theta2) coordinate on every frame.
+        # save_state() lets Restore() snap the table back to its neutral appearance afterward.
         table_of_dps.save_state()
         self.play(TrackDoublePendulumWithTable(
             dp_master,
             table_of_dps,
             dp_visualizer,
-            duration=13  # 13 seconds
+            duration=5  # FINAL: 13 seconds
         ))
         self.play(
             Restore(table_of_dps, run_time=2, rate_func=anticipate),
             FadeOut(dp, dp_visualizer, shift=DOWN * 3, run_time=2, rate_func=anticipate)
         )
+
+        # TrackDoublePendulumWithTable lowers the table z-index during tracking; restore it.
         table_of_dps.set_z_index(2)
         self.play(Group(cs2_group, table_of_dps, table_title2).animate.shift(LEFT * 2.95),
                   run_time=1,
@@ -1364,6 +1389,8 @@ class Scene6(ComplexScene):
         # endregion
 
         # region scene 6.3
+        # TurnTableIntoBlocks replaces each miniature pendulum with a colour-filled square,
+        # collapsing the  grid into a pixel representation.
         blocky_table = BlockyPixels(
             table_of_dps.cs,
             table_of_dps.row_count,
@@ -1375,47 +1402,33 @@ class Scene6(ComplexScene):
         ).set_z_index(1)
         lag = 8 / (table_of_dps.row_count * table_of_dps.column_count * 4)
         self.play(TurnTableIntoBlocks(table_of_dps, blocky_table, 5, lag))
+
+        # TurnTableIntoBlocks adds each block as an individual scene child; consolidate
+        # them back into the parent VGroup to reduce per-submobject update overhead.
         for block in blocky_table.submobjects:
             self.remove(block)
         self.add(blocky_table)
         # endregion
 
         # region scene 6.3 mobjects
+
+        # Fresh DoublePendulum at the same initial condition as before, used for pixel tracking
+        # on the smooth image later in this scene.
         dp_master = DoublePendulum((dp_master.init_angle_1, dp_master.init_angle_2))
         dp = dp_master.create_double_pendulum(1.5, 1.5).shift(LEFT * 4).set_z_index(4)
         av = dp.create_angle_visualizer().set_z_index(3)
         av.angle_1_value.set_z_index(5)
         av.angle_2_value.set_z_index(5)
-        pixel_image_1 = BlockyPixels(
-            cs2,
-            80,  # R: 80
-            80,  # R: 80
-            0,
-            0,
-            0.25
-        ).set_z_index(1)
-        pixel_image_1_2 = BlockyPixels(
-            cs2,
-            160,  # R: 160
-            160,  # R: 160
-            0,
-            0,+
-            0.125
-        ).set_z_index(1)
-        pixel_image_1_3 = BlockyPixels(
-            cs2,
-            320,  # R: 320
-            320,  # R: 320
-            0,
-            0,
-            0.0625
-        ).set_z_index(1)
+
+        # Four resolution levels staged off the right edge of the frame.
+        # Each slides in to replace the previous, making the granularization visible
+        # at human scale before the smooth image is revealed.
+        pixel_image_1 = BlockyPixels(cs2, 20, 20, 0, 0, 0.25).set_z_index(1)  # FINAL: 80x80
+        pixel_image_1_2 = BlockyPixels(cs2, 30, 30, 0, 0, 0.125).set_z_index(1)  # FINAL: 160x160
+        pixel_image_1_3 = BlockyPixels(cs2, 40, 40, 0, 0, 0.0625).set_z_index(1)  # FINAL: 320x320
         pixel_image_2 = PixelStaticVisuals(
-            cs2,
-            pixel_length,
-            pixel_length,
-            TCF.torus_smooth_gradient,
-        ).set_z_index(1)
+            cs2, pixel_length, pixel_length, TCF.torus_smooth_gradient,
+        ).set_z_index(1)  # full resolution
         # endregion
 
         # region scene 6.3 animations
@@ -1427,6 +1440,8 @@ class Scene6(ComplexScene):
             "run_time": 2,
             "rate_func": slow_into
         }
+
+        # Slide each resolution level in from the right, immediately discarding the previous.
         self.play(Shift(pixel_image_1, **shift_kwargs))
         self.remove(blocky_table)
         self.wait()
@@ -1439,11 +1454,21 @@ class Scene6(ComplexScene):
         self.play(Shift(pixel_image_2, **shift_kwargs))
         self.remove(pixel_image_1_3)
         self.wait(2)
+
+        # Slide the pixel image right and bring the pendulum in from the left simultaneously.
         self.play(
             FadeIn(Group(av, dp), shift=RIGHT * 4.85),
             Group(cs2_group, pixel_image_2, table_title2).animate.shift(3 * RIGHT),
             run_time=1, rate_func=anticipate
         )
+
+        # two successive transforms from left to right then vice versa:
+        #   Step 1: moves the angle-visualizer arcs (submobjects 4:6) into a colour
+        #           square (tracker) at the (theta1, theta2) coordinate on the pixel image labeled "all possible
+        #           positions.
+        #   Step 2: moves a copy of tracker from the table on the right to the pendulum position (
+        #           static_tracker_copy) on the left, which is displayed at 3 Manim units and shrinks to pixel size
+        #           during tracking.
         tracker, static_tracker_copy = self.get_tracker_and_static_tracker_copy(
             dp_master.init_angle_1,
             dp_master.init_angle_2,
@@ -1469,11 +1494,14 @@ class Scene6(ComplexScene):
             static_tracker_copy.set_z_index(2),
             **tracker_kwargs
         ))
+
+        # Shrinks static_tracker_copy from 3 Manim units to one rendered pixel over the tracking run.
+        # Run as an updater so it plays concurrently with TrackDoublePendulumWithPixelVisuals.
         pixel_ratio = static_tracker_copy.side_length * (config.frame_height / pixel_length)
         turn_animation_into_updater(
             ManualScaleAnimation(
                 static_tracker_copy,
-                {6: 1, 15: pixel_ratio},
+                {6: 1, 15: pixel_ratio},  # at t=6s: full size, at t=15s: one pixel
                 smooth,
                 run_time=27
             )
@@ -1487,25 +1515,37 @@ class Scene6(ComplexScene):
             12,
             suspend_mobject_updating=False
         ))
+
+        # Transition to the dual-table layout for 6.4:
+        # left table (cs)  - small axes with new_table_of_dps, "ALL POSSIBLE INITIAL POSITIONS"
+        # right table (cs2) - smooth pixel image scaled to 6/7, "ALL POSSIBLE POSITIONS"
         table_title = Tex(
             "ALL POSSIBLE ", "INITIAL ", "POSITIONS",
             fill_color=AMBER_ORANGE,
             tex_template=get_font_for_tex("Montserrat Medium")
-        ).scale(0.5 * (6/7)).next_to(cs.bg_rectangle, UP, buff=0.05 * (6/7))
+        ).scale(0.5 * (6 / 7)).next_to(cs.bg_rectangle, UP, buff=0.05 * (6 / 7))
         new_table_of_dps = TableOfDoublePendulums(cs, table_of_dps.row_count, table_of_dps.column_count).set_z_index(7)
         self.play(
             FadeOut(Group(dp, av, static_tracker_copy, tracker), shift=DOWN * 8),
             FadeIn(Group(cs_group, new_table_of_dps, table_title), shift=DOWN * 8),
-            Group(cs2_group, pixel_image_2, table_title2).animate.scale(6/7).shift(0.8 * RIGHT + 0.01 * UP),
+            Group(cs2_group, pixel_image_2, table_title2).animate.scale(6 / 7).shift(0.8 * RIGHT + 0.01 * UP),
             run_time=2,
             rate_func=anticipate
         )
         # endregion
-        
+
         # region scene 6.4 mobjects
+
+        # Raise cs2 axis labels to z=6 so they stay legible above the incoming
+        # tracker squares during the arc animations below.
         for submob in cs2.submobjects:
             submob.set_z_index(6)
 
+        # For each pendulum in new_table_of_dps, pre-build two successive animations:
+        #  left-to-right transformation anim - each dp moves to a colour square (tracker) at its pixel coordinate on
+        #                                      cs2. This reads off the color assigned to that initial condition.
+        #  right-to-left transformation anim - tracker moves to a static copy at its coordinate on cs. This stamps
+        #                                      that color onto the configuration map (left table).
         tracker_group = VGroup()
         static_tracker_copy_group = VGroup()
         dp_to_tracker_anims = []
@@ -1515,15 +1555,15 @@ class Scene6(ComplexScene):
             "run_time": 4,
             "rate_func": smoothererstep
         }
-        for i, dp in enumerate(tqdm(new_table_of_dps.submobjects, desc="Moving DPs to the right")):
+        for dp in tqdm(new_table_of_dps.submobjects, desc="Moving DPs to the right"):
             tracker, static_tracker_copy = self.get_tracker_and_static_tracker_copy(
                 dp._angle_pair[0],
                 dp._angle_pair[1],
                 cs2,
                 pixel_image_2,
                 cs.coords_to_point((dp._angle_pair[0], dp._angle_pair[1])),
-                0.06,
-                new_table_of_dps.x_retstep,
+                0.06,  # tracker size on the pixel image
+                new_table_of_dps.x_retstep,  # static copy size matches the grid cell spacing
                 0.5
             )
             tracker.set_z_index(8)
@@ -1537,13 +1577,22 @@ class Scene6(ComplexScene):
                 FadeReplacementTransform(tracker.copy(), static_tracker_copy, **anims_kwargs)
             )
         # endregion
-        
+
         # region scene 6.4 animations
+
+        # left-to-right transformation anim
         self.play(AnimationGroup(*dp_to_tracker_anims, lag_ratio=0))
+
+        # Raise cs axes above the tracker squares before right-to-left transformation anim so labels remain visible.
         cs.set_z_index(9)
+
+        # right-to-left transformation anim; the pendulum grid fades out at the same time
         self.play(AnimationGroup(*tracker_to_static_tracker_copy_anims, lag_ratio=0),
                   FadeOut(new_table_of_dps, run_time=4),
                   )
+
+        # Release all pendulums simultaneously; tracker squares scatter across the pixel image on the right
+        # as each initial condition evolves independently through configuration space on the left.
         self.play(TrackTableOfDoublePendulumsWithPixelVisuals(
             new_table_of_dps,
             pixel_image_2,
@@ -1552,7 +1601,6 @@ class Scene6(ComplexScene):
             30
         ))
         # endregion
-        """
 
     @ignore
     def scene6_5_high_qual_pixelvisuals(self):
@@ -2556,7 +2604,7 @@ class Scene6(ComplexScene):
         anim = PixelVisualizationAnimation(quad_pixel_visual, 20, "example_anim")
         anim.interpolate(1163/1200)
 
-    @run
+    @ignore
     def flips_early(self):
         # region CONFIGURATION AND SETUP
         self.get_scene6_ending_setup()
@@ -2719,7 +2767,6 @@ class Scene6(ComplexScene):
             FadeReplacementTransform(large_pixel_visual, self.pixel_visual),
         ), run_time=1.5)
         for scaffold in scaffolds[:2]:
-            # self.play(FadeIn(scaffold, shift=RIGHT*2, scale=0.5, run_time=1))
             self.play(Create(scaffold))
         self.wait()
         copy_duration = 2
@@ -2741,7 +2788,7 @@ class Scene6(ComplexScene):
         self.wait(3)
 
         # final AnimationGroup
-        skip_processing: bool = False
+        skip_processing: bool = True
         timeline = {
             0: [
                 PixelVisualizationAnimation(
@@ -2807,14 +2854,11 @@ class Scene6(ComplexScene):
             timeline[time_stamp] = create_morph_animation(angle_pair, run_time)
 
         self.next_section(skip_animations=False)
-        play_timeline(self, timeline)
+        play_anims(self, timeline)
         # endregion
 
 
 class Scene7(ComplexScene):
-    run = ComplexScene.run
-    skip = ComplexScene.skip
-    ignore = ComplexScene.ignore
 
     def setup(self):
         pass

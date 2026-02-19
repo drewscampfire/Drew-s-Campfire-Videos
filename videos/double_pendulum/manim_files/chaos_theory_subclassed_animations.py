@@ -4,7 +4,7 @@ import warnings
 
 from chaos_theory_mobjects import *
 from chaos_theory_base_classes import *
-from custom_manim import *
+from src.custom_manim import *
 
 
 class ReleaseDoublePendulum(Animation):

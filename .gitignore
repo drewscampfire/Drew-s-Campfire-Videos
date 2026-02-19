@@ -1,5 +1,11 @@
+# --- Python Internals ---
 __pycache__/
-.idea/
+*.py[cod]
+*$py.class
+*.so
+.env
+venv/
+.venv/
 
 *.dat
 *.wav

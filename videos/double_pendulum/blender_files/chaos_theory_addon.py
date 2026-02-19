@@ -6,7 +6,7 @@ from numba import njit
 from manim import DEGREES, ORIGIN
 from tqdm import tqdm
 import math
-from mydebugger import timer
+from src.debug_utils import timer
 from my_blender_utils import turn_off_visibility, create_and_configure_existing_geom_modifier_on_object
 
 bl_info = {

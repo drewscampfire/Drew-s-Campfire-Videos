@@ -1,16 +1,11 @@
-import bpy
-import numpy as np
-from manim import DEGREES
 import importlib
-import Drawblend
-from mydebugger import inspect_shape_of_array
+from src import drawblend
 
 importlib.reload(Drawblend)
-from Drawblend import *
+from src.drawblend import *
 import my_blender_utils
 importlib.reload(my_blender_utils)
 from my_blender_utils import *
-from tqdm import tqdm
 
 # region creating variables to reference to different collections in the scene
 objects = {

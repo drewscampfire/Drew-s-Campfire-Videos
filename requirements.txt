@@ -1,10 +1,15 @@
+# Animation & Rendering
 manim
+matplotlib
+
+# Math & Physics
+numpy
+scipy
 torch
 torchdiffeq
-scipy
-numpy
+
+# Performance & Utilities
 tqdm
-memory_profiler
 numba
 psutil
-matplotlib
+memory_profiler

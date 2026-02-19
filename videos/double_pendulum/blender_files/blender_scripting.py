@@ -6,7 +6,7 @@ from scipy.integrate import solve_ivp
 from numba import njit
 from manim import DEGREES, ORIGIN
 
-from mydebugger import timer
+from src.debug_utils import timer
 from my_blender_utils import clear_single_keyframes
 
 

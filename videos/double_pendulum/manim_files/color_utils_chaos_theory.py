@@ -1,14 +1,4 @@
-import torch
-
-import numpy as np
-from manim import *
-from numpy import sin, cos, tan
-from numba import njit
-import math
-from typing import Sequence, Callable
-from custom_manim import *
-from enum import Enum
-
+from src.custom_manim import *
 
 RAINBOW = [
     PURE_RED,

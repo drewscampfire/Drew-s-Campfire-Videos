@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import subprocess
-from manim import *
-from custom_manim import *
-from mydebugger import *
+from src.custom_manim import *
+from src.debug_utils import *
 
 def get_font_for_tex(font_name: str) -> TexTemplate:
     """

@@ -9,15 +9,15 @@ from mathutils import Vector, Euler
 from chaos_theory_addon import Scene2_S
 
 
+fps: int = bpy.context.scene.render.fps
+
+
 def serialize_vector(v):
     return [v.x, v.y, v.z]
 
 
 def deserialize_vector(v):
     return Vector(v)
-
-
-fps: int = bpy.context.scene.render.fps
 
 
 class BlendScene:
