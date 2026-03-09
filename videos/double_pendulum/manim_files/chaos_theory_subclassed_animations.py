@@ -425,6 +425,14 @@ class MorphPlotWithAddedAxes(AnimateGhostsWithPlot):
                 scene.remove(start_dot)
         super().clean_up_from_scene(scene)
 
+    # def get_all_families_zipped(self):
+    #     # Restore pre-0.20.0 non-strict behavior for variable-topology plots
+    #     return zip(
+    #         self.mobject.get_family(),
+    #         self.starting_mobject.get_family(),
+    #         strict=False
+    #     )
+
 
 class SweepToCreateDoublePendulums(Animation):
     def __init__(

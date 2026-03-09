@@ -25,31 +25,23 @@ Drew-s-Campfire-Videos/
 
 ### `src/drawblend.py` - Scripting Tool for Blender
 
-`drawblend.py` provides two classes, `BlendScene` and `Blobject`, that together expose a Python API for driving Blender programmatically, essentially bringing Manim-style programmatic animation to Blender's 3D environment. (Note: this requires manual setup for each scene in Blender).
+`drawblend.py` provides two classes, `BlendScene` and `Blobject`, that together expose a Python API for driving Blender programmatically, essentially bringing Manim-style programmatic animation to Blender's 3D environment. (Note: this is a very bare-bones implementation at the moment but will probably expand it for future projects).
 
-**`BlendScene`** is the base class for Blender scenes, mirroring the role that `Scene` plays in Manim. It provides:
+**`BlendScene`** is the base class for Blender scenes, mirroring the role that `Scene` plays in Manim. 
 
-- `delete_keyframes_in_range` - clears all object and material keyframes in a given frame range, with the option to exclude specific collections. I usually used this to non-destructively recompute animation data during iterative development.
-- `compute_lagged_frame_start_and_end` - given a total frame range and a lag ratio, computes the per-object start and end frames for a staggered group animation, equivalent to Manim's `lag_ratio` in `AnimationGroup`. (I just really like the result of using AnimationGroup in Manim, so I recreated it in Blender).
-
-**`Blobject`** (Blender object) wraps a `bpy.data.objects` entry and exposes a chainable API for keyframing any object property. (Each method returns `self` so calls can be chained.) I also intentionally designed method names to be as close to Manim's as possible:
-
-- `fade_in` / `fade_out` - keyframes the object's material alpha from 0 to 1 or vice versa over a given duration
-- `move_to` / `shift_by` - keyframes the object's location
-- `animate_geom_modifier_input` -- keyframes a named input on a Geometry Nodes modifier, useful for animating mesh properties
-- `slide_material_attribute` - keyframes any shader node input between two values over a frame range, useful for animating material properties like color and roughness
+**`Blobject`** (Blender object) wraps a `bpy.data.objects` entry and exposes a chainable API for keyframing any object property. (Each method returns `self` so calls can be chained.) I also intentionally designed method names to be as close to Manim's as possible.
 
 ### `src/custom_manim.py` - Custom Mobjects, Animation Classes and Scene Functionality
 
 This is my supplementary library for Manim CE. (I owe a lot to the old Manim Discord server, which unfortunately has been compromised by a bad actor.) Three systems I've developed here (among others) are:
 
-#### `ComplexScene` - Better Organization of Subscenes
+#### `ComplexScene` - Better Organization of subscenes
 
 `ComplexScene` extends Manim's `Scene` with a subscene system that splits a single scene class into independently renderable methods. Each method is registered using one of three decorators:
 
 - **`@run`** - marks a ComplexScene method to be rendered. It is executed in declaration order when `play_subscenes()` is called in the `construct` method.
-- **`@skip`** - identical to `@run` but passes `skip_animations=True`, causing the section to advance to its finished state instantly. Useful for skipping already-finished sections during development without removing them.
-- **`@ignore`** - excludes a method entirely from `play_subscenes()`. Useful for keeping work-in-progress or archived subscenes in the file without rendering them.
+- **`@skip`** - identical to `@run` but passes `skip_animations=True`, causing the section to advance to its finished state instantly. 
+- **`@ignore`** - excludes a method entirely from `play_subscenes()`.
 
 Here is what it looks like in practice:
 
@@ -87,7 +79,7 @@ play_anims(self, {
 })
 ```
 
-Animations are converted to updaters and run in parallel with precise timing. 
+Animations are converted to updaters and they are run in parallel based on the given precise timings. 
 
 #### `DynamicAxes` - A More Powerful `Axes` Mobject
 

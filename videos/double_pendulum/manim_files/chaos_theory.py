@@ -1257,7 +1257,7 @@ class Scene6(ComplexScene):
         self.add_background()
         self.play_subscenes()
 
-    @run
+    @ignore
     def scene6_introducing_pixel_map(self):
         """
         Covers scenes 6.1 through 6.4.
@@ -2604,7 +2604,7 @@ class Scene6(ComplexScene):
         anim = PixelVisualizationAnimation(quad_pixel_visual, 20, "example_anim")
         anim.interpolate(1163/1200)
 
-    @ignore
+    @run
     def flips_early(self):
         # region CONFIGURATION AND SETUP
         self.get_scene6_ending_setup()
@@ -2618,8 +2618,8 @@ class Scene6(ComplexScene):
         inset_2_range = [(-33.5, -28.5), (-153, -148)]
         sim_labels = [-180, -90, 0, 90, 180]
         dp_count_size = 4 # 30
-        duration = 50 # 145
-        plot_duration = 50 # 50
+        duration = 20 # 145
+        plot_duration = 20 # 50
 
         large_cs = get_standard_cs(labeled_values_for_x_override=sim_labels,
                                    labeled_values_for_y_override=sim_labels,).set_z_index(2)
@@ -2770,6 +2770,7 @@ class Scene6(ComplexScene):
             self.play(Create(scaffold))
         self.wait()
         copy_duration = 2
+
         # bringing copies of the axes to the top along with the equivalent table of double pendulums
         for itchy_group, scaffold_up, scaffold_down in zip(
                 itchy_groups,
@@ -2788,7 +2789,7 @@ class Scene6(ComplexScene):
         self.wait(3)
 
         # final AnimationGroup
-        skip_processing: bool = True
+        skip_processing: bool = False
         timeline = {
             0: [
                 PixelVisualizationAnimation(
@@ -2822,15 +2823,15 @@ class Scene6(ComplexScene):
         }
         move_plot_list = [
             [20.5, (-31.3, -149.5)],
-            [30.5, (-29, -149.5)],
-            [45.58, (-32, -150.5)],
-            [55.68, (-33.33, -163)],
-            [65.75, (-31.44, -163)],
-            [85.95, (-30.7, -151.5)],
-            [96.13, (-32, -148.2)],
-            [106.20, (-29.5, -149.5)],
-            [116.4, (-32, -152)],
-            [136.7, (-31.3, -149.5)],
+            # [30.5, (-29, -149.5)],
+            # [45.58, (-32, -150.5)],
+            # [55.68, (-33.33, -163)],
+            # [65.75, (-31.44, -163)],
+            # [85.95, (-30.7, -151.5)],
+            # [96.13, (-32, -148.2)],
+            # [106.20, (-29.5, -149.5)],
+            # [116.4, (-32, -152)],
+            # [136.7, (-31.3, -149.5)],
         ]
 
         # assign MorphPlot Anim to every timestamp and its corresponding new angle pair

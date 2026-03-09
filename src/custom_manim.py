@@ -242,7 +242,7 @@ class ComplexScene(Scene):
             self.next_section(name=method_name, **params)
             method(self)
 
-    def wait(self, duration: float = 1, stop_condition=None, frozen_frame: bool = False):
+    def wait(self, duration: float = 1, stop_condition=None, frozen_frame: bool = None):
         super().wait(duration=duration, stop_condition=stop_condition, frozen_frame=frozen_frame)
 
 
